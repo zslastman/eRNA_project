@@ -1,0 +1,22 @@
+load('/g/furlong/project/11_Histone_ChIP_seq/BiTS-ChIP/data/modENCODE/rda/Kevin-White_H3K4me3_4-8h.rda')
+chrom.rles[['modencode_H3K4me3_4.8h']]  <- readCoverage(IP)
+load('/g/furlong/project/11_Histone_ChIP_seq/BiTS-ChIP/data/modENCODE/rda/Kevin-White_K4me1_4-8h.rda')
+chrom.rles[['modencode_H3K4me1_4.8h']]  <- readCoverage(IP)
+load('/g/furlong/project/11_Histone_ChIP_seq/BiTS-ChIP/data/modENCODE/rda/Kevin-White_input_4-8h.rda')
+chrom.rles[['modencode_input_4.8h']]  <- readCoverage(IP)
+load('/g/furlong/project/11_Histone_ChIP_seq/BiTS-ChIP/data/modENCODE/rda/Kevin-White_K27ac_4-8h.rda')
+chrom.rles[['modencode_K27ac_4.8h']]  <- readCoverage(IP)
+load('/g/furlong/project/11_Histone_ChIP_seq/BiTS-ChIP/data/modENCODE/rda/Kevin-White_PolII_4-8h.rda')
+chrom.rles[['modencode_PolII_4.8h']]  <- readCoverage(IP)
+load('/g/furlong/project/11_Histone_ChIP_seq/BiTS-ChIP/data/modENCODE/rda/Kevin-White_PolII-input_4-8h.rda')
+chrom.rles[['modencode_input_PolII_4.8h']]  <- readCoverage(IP)
+
+
+export(chrom.rles$modencode_H3K4me3_4.8h,con='data/modencode/H3K4me3_4.8.bigWig')
+export(chrom.rles$modencode_H3K4me1_4.8h,con='data/modencode/H3K4me1_4.8.bigWig')
+
+kundu.crms<-import('data/kundu_et_al_regions.bed')
+kundu.crms<-as(kundu.crms,'GRanges')
+seqlevels(kundu.crms)<-seqlevels(Dmelanogaster)
+kundu.crms$name<-paste0('k',1:length(kundu.crms),'_kundu.crm')
+export(kundu.crms,'data/kundu_et_al_regions.bed')
