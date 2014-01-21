@@ -17,7 +17,7 @@ regs=list(
 library(doBy,lib.loc='~/Harnett/R')
 source('')
 #What level of tags actually predicts polII?
-gr<-crmgrs
+gr<-crm8008.gr
 gr<-keepSeqlevels(gr,chrs.keep)
 polrlelist<-chrom.rles.rpgc.sub.merge$PolII_6.8
 

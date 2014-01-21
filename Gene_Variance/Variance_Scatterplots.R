@@ -15,8 +15,8 @@ load('data/objects/all.cage.unprocessed.object.R')
 cg=cage.tag.rles
 rm(cage.tag.rles)
 load('data/objects/all.tagseq.unprocessed.R')
-ts=tagseq.rles
-rm(tagseq.rles)
+ts=ts
+rm(ts)
 #tss annotation
 load(file.tss)
 #misc parameters

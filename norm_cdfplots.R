@@ -95,19 +95,19 @@ cumsum.df.denorm <-do.call(rbind,mapply(SIMPLIFY=F,cg.de[],saccs[],FUN=return.rc
 dir.create('analysis/norm_cdfplots')
 
 pdf('analysis/norm_cdfplots/cdfunp.pdf')
-qplot(data=cumsum.df.u,x=level,y=freq,group=acc,log='xy',geom='line')
+qplot(data=cumsum.df.u,x=level,y=freq,group=acc,log='xy',geom='point')
 dev.off()
 
 pdf('analysis/norm_cdfplots/cdfpl.pdf')
-qplot(data=cumsum.df.pl<,x=level,y=freq,group=acc,log='xy',geom='line')
+qplot(data=cumsum.df.pl,x=level,y=freq,group=acc,log='xy',geom='line')
 dev.off()
 
 pdf('analysis/norm_cdfplots/cdflibnorm.pdf')
-qplot(data=cumsum.df.libnorm<,x=level,y=freq,group=acc,log='xy',geom='line')
+qplot(data=cumsum.df.libnorm,x=level,y=freq,group=acc,log='xy',geom='line')
 dev.off()
 
 pdf('analysis/norm_cdfplots/cdfdeseq.pdf')
-qplot(data=cumsum.df.denorm<,x=level,y=freq,group=acc,log='xy',geom='line')
+qplot(data=cumsum.df.denorm,x=level,y=freq,group=acc,log='xy',geom='line')
 dev.off()
 
 object.size(cumsum.df.u/1000000)

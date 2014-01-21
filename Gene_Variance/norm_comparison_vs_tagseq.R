@@ -15,8 +15,8 @@ load('data/objects/all.cage.unprocessed.object.R')
 cg=cage.tag.rles
 rm(cage.tag.rles)
 load('data/objects/all.tagseq.unprocessed.R')
-ts=tagseq.rles
-rm(tagseq.rles)
+ts=ts
+rm(ts)
 iterations=1000#number of iterations when doing empirical pvalues
 #names of timepoints
 tps=c('tp24h','tp68h','tp1012h')
@@ -66,7 +66,8 @@ tagseq.peaks=sapply(tagseq.peaks,function(f){
 })
 names(tagseq.peaks) = tps
 #create 500bp windows around the end of trnascripts for finding our tagseq peaks
-ends.gr=resize(transcripts.gr,width=500,fix='end')
+filt.transcripts.gr = transcripts.gr[countOverlaps(transcripts.gr,transcripts.gr)==1]
+ends.gr=resize(filt.transcripts.gr,width=500,fix='end')
 ends.gr=shift(ends.gr,250)
 
 
@@ -84,126 +85,138 @@ cormeanlist=list()
 gene.shuffle.pvals=list()
 gene.cors.tp=list()
 setwd ( '/g/furlong/Harnett/TSS_CAGE_myfolder/' )
-for(cage.data in list(
-	paste0(rootfolder,'data/objects/cg.libnorm.object.R'),
-	paste0(rootfolder,'data/objects/cg.sqrt.object.R'),
-	paste0(rootfolder,'data/objects/cg.pl.object.R'),
-	paste0(rootfolder,'data/objects/cg.qn.object.R'),
-	paste0(rootfolder,'data/objects/cg.qn.allsites.object.R'),
-	paste0(rootfolder,'data/objects/all.cage.unprocessed.object.R')
-)){#create a subfolder for each one
-	setn=gsub('.*/(.*?).R$',x=cage.data,rep='\\1')
-	#load the cage dataset,awkward but I forgot to save with RDS objects
-	message('loading cage dataset')
-	message(setn)
-	cgenv<-new.env()
-	load(file=cage.data,env=cgenv)
-	cg=cgenv[[ls(cgenv)[1]]]
-	rm(cgenv)
-	
-	message(length(cg))
-	#
-	message('creating folder')
-	setwd(outfolder)
-	outsubfolder=paste0(outfolder,'/',setn)
-	dir.create(outsubfolder,showWarnings=F)
-	setwd(outsubfolder)
-	#check our data:
-	#list with all accs in ii
-	stopifnot(is.list(cg))
-	# stopifnot(all(names(cg)%in%unlist(accs)))
-	stopifnot(all(sapply(cg,function(g){cat('.');'SimpleRleList' %in% is(g$pos)})))
-	message('data checks out')
+for(tagseq.data in list(
+	'/g/furlong/Harnett/TSS_CAGE_myfolder/data/objects/ts.object.R',
+	'/g/furlong/Harnett/TSS_CAGE_myfolder/data/objects/ts.pl.object.R'
+	)){
+	for(cage.data in list(
+		paste0(rootfolder,'data/objects/cg.libnorm.object.R'),
+		#paste0(rootfolder,'data/objects/cg.sqrt.object.R'),
+		paste0(rootfolder,'data/objects/cg.pl.map.object.R')
+		#paste0(rootfolder,'data/objects/cg.qn.object.R'),
+		#paste0(rootfolder,'data/objects/cg.qn.allsites.object.R'),
+		#paste0(rootfolder,'data/objects/all.cage.unprocessed.object.R')
+	)){  #create a subfolder for each one
+		setn= paste0(gsub('.*/(.*?).object.R$',x=cage.data,rep='\\1'),'.',gsub('.*/(.*?).object.R$',x=tagseq.data,rep='\\1'))
+		#load the cage dataset,awkward but I forgot to save with RDS objects
+		message('loading cage dataset')
+		message(setn)
 
-	# which(!sapply(cg,function(g){cat('.');'SimpleRleList' %in% is(g$both)}))
-	# boths=sapply(names(cg),function(acc){cg[[acc]]$pos+cg[[acc]]$neg})
-	###### 5 Now get our matrices of counts
-	#Now go through each timepoint and just 
-	tssmat=list()
-	endmat=list()
-	for (tp in tps){
-		#select tss with only 1 peak at each tp
-		fov = findOverlaps(ends.gr,tagseq.peaks[[tp]])
-		fov = fov[!duplicated(fov@queryHits) & !duplicated(fov@subjectHits),]
-		#get the tss
-		utss=resize(transcripts.gr[ fov@queryHits ],width=1,fix='start')
-		utss=sort(resize(utss,width=500,fix='center'))
-		#and en of transcripts from the peak data
-		uends = sort(tagseq.peaks[[tp]][ fov@subjectHits ])
-		stopifnot(length(uends)==length(utss))
-		#relevant rles to use for this tp
-		tp.accs=accs[[tp]]
-		tp.taccs=taccs[[tp]]
-		tp.accs = tp.accs[ tp.accs %in% names(cg) & tp.taccs %in% names(ts) ]
-		tp.taccs = tp.taccs[ tp.accs %in% names(cg) & tp.taccs %in% names(ts) ]
-		stopifnot(length(tp.accs)==length(tp.taccs))
-		#now get a matrix of strand specific values
-		libs=unique(tp.accs)
-		tssmat[[tp]] = simplify2array(mclapply(mc.cores=10,libs,function(acc){
-			v=rep(0,length(utss))
-			v[as.vector(strand(utss)=='-')]=unlist(viewSums(GRViews(cg[[acc]]$neg,utss[strand(utss)=='-'])))
-			v[as.vector(strand(utss)=='+')]=unlist(viewSums(GRViews(cg[[acc]]$pos,utss[strand(utss)=='+'])))
-			stopifnot(length(v)==length(utss))
-			v
-		}))
-		dim(tssmat[[tp]])
-		colnames(tssmat[[tp]])=libs
-		 #and for the ends
-		libs=unique(tp.taccs)
-		endmat[[tp]]=simplify2array(mclapply(mc.cores=10,libs,function(acc){
-			v=rep(0,length(uends))
-			v[as.vector(strand(uends)=='-')]=unlist(viewSums(GRViews(ts[[acc]]$neg,uends[strand(uends)=='-'])))
-			v[as.vector(strand(uends)=='+')]=unlist(viewSums(GRViews(ts[[acc]]$pos,uends[strand(uends)=='+'])))
-			v
-		}))
-		dim(tssmat[[tp]])
-		dim(endmat[[tp]])
-		colnames(endmat[[tp]])=libs
-		stopifnot(nrow(tssmat[[tp]])==nrow(endmat[[tp]]))
-		#now put in rownames
-		rownames(tssmat[[tp]])=rownames(endmat[[tp]])=utss$TrID
-		tokeep	= rowSums(tssmat[[tp]])!=0 & rowSums(endmat[[tp]])!=0 
-		tssmat[[tp]]=tssmat[[tp]][ tokeep,]#get rid of our zeros
-		endmat[[tp]]=endmat[[tp]][ tokeep,]#get rid of our zeros
-			#normalize our tagseq with just the library size for now
-		gcov=with(tagseq.df,genome.coverage[match(unique(tp.taccs),accession)])
-		endmat[[tp]]=sweep(endmat[[tp]],MARGIN=2,STAT=gcov,FUN='/')
-				stopifnot(nrow(tssmat[[tp]])==nrow(endmat[[tp]]))
+		cgenv<-new.env()
+		load(file=cage.data,env=cgenv)
+		cg=cgenv[[ls(cgenv)[1]]]
+		rm(cgenv)
 
-			#fix the names
-	}
-	message('data matrices computed')
-	sapply(tssmat,dim)
-	sapply(endmat,dim)
-	#quantile normalization across tss if we are using the unaltered data
-	if(grepl('unprocessed',cage.data)){
-		tssmat=sapply(names(tssmat),function(tp){
-			apply(tssmat[[tp]],MARGIN=2,FUN=qnormvect)
-		})
-	}
+		tsenv<-new.env()
+		load(file=tagseq.data,env=tsenv)
+		ts=tsenv[[ls(tsenv)[1]]]
+		rm(tsenv)
+
+		message(length(cg))
+		message(length(ts))
+		#
+		message('creating folder')
+		setwd(outfolder)
+		outsubfolder=paste0(outfolder,'/',setn)
+		dir.create(outsubfolder,showWarnings=F)
+		setwd(outsubfolder)
+		#check our data:
+		#list with all accs in ii
+		stopifnot(is.list(cg))
+		# stopifnot(all(names(cg)%in%unlist(accs)))
+		stopifnot(all(sapply(cg,function(g){cat('.');'SimpleRleList' %in% is(g$pos)})))
+		message('data checks out')
+		# which(!sapply(cg,function(g){cat('.');'SimpleRleList' %in% is(g$both)}))
+		# boths=sapply(names(cg),function(acc){cg[[acc]]$pos+cg[[acc]]$neg})
+		###### 5 Now get our matrices of counts
+		#Now go through each timepoint and just 
+		tssmat=list()
+		endmat=list()
+		for (tp in tps){
+			#select tss with only 1 peak at each tp
+			fov = findOverlaps(ends.gr,tagseq.peaks[[tp]])
+			fov = fov[!duplicated(fov@queryHits) & !duplicated(fov@subjectHits),]
+			#get the tss
+			utss=resize(filt.transcripts.gr[ fov@queryHits ],width=1,fix='start')
+			utss=sort(resize(utss,width=500,fix='center'))
+			#and en of transcripts from the peak data
+			uends = sort(tagseq.peaks[[tp]][ fov@subjectHits ])
+			stopifnot(length(uends)==length(utss))
+			#relevant rles to use for this tp
+			tp.accs=accs[[tp]]
+			tp.taccs=taccs[[tp]]
+			tp.accs = tp.accs[ tp.accs %in% names(cg) & tp.taccs %in% names(ts) ]
+			tp.taccs = tp.taccs[ tp.accs %in% names(cg) & tp.taccs %in% names(ts) ]
+			stopifnot(length(tp.accs)==length(tp.taccs))
+			#now get a matrix of strand specific values
+			libs=unique(tp.accs)
+			tssmat[[tp]] = simplify2array(mclapply(mc.cores=10,libs,function(acc){
+				v=rep(0,length(utss))
+				v[as.vector(strand(utss)=='-')]=unlist(viewSums(GRViews(cg[[acc]]$neg,utss[strand(utss)=='-'])))
+				v[as.vector(strand(utss)=='+')]=unlist(viewSums(GRViews(cg[[acc]]$pos,utss[strand(utss)=='+'])))
+				stopifnot(length(v)==length(utss))
+				v
+			}))
+			dim(tssmat[[tp]])
+			colnames(tssmat[[tp]])=libs
+			 #and for the ends
+			libs=unique(tp.taccs)
+			endmat[[tp]]=simplify2array(mclapply(mc.cores=10,libs,function(acc){
+				v=rep(0,length(uends))
+				v[as.vector(strand(uends)=='-')]=unlist(viewSums(GRViews(ts[[acc]]$neg,uends[strand(uends)=='-'])))
+				v[as.vector(strand(uends)=='+')]=unlist(viewSums(GRViews(ts[[acc]]$pos,uends[strand(uends)=='+'])))
+				v
+			}))
+			dim(tssmat[[tp]])
+			dim(endmat[[tp]])
+			colnames(endmat[[tp]])=libs
+			stopifnot(nrow(tssmat[[tp]])==nrow(endmat[[tp]]))
+			#now put in rownames
+			rownames(tssmat[[tp]])=rownames(endmat[[tp]])=utss$TrID
+			tokeep	= rowSums(tssmat[[tp]])!=0 & rowSums(endmat[[tp]])!=0 
+			tssmat[[tp]]=tssmat[[tp]][ tokeep,]#get rid of our zeros
+			endmat[[tp]]=endmat[[tp]][ tokeep,]#get rid of our zeros
+				#normalize our tagseq with just the library size for now
+			gcov=with(tagseq.df,genome.coverage[match(unique(tp.taccs),accession)])
+			endmat[[tp]]=sweep(endmat[[tp]],MARGIN=2,STAT=gcov,FUN='/')
+			stopifnot(nrow(tssmat[[tp]])==nrow(endmat[[tp]]))
+				#fix the names
+		}
 	
-	#We now have matrices with the rows representing genes at a given timepoint 
-	###### 6 Now get correlations of matching libraries
-	#get the correlation for each tss
-	message('computing gene correlations')
-	gene.cors.tp[[setn]]=sapply(simplify=F,tps,function(tp){
-		tp.accs=accs[[tp]]
-		tp.taccs=taccs[[tp]]
-		tp.accs = tp.accs[ tp.accs %in% names(cg) & tp.taccs %in% names(ts) ]
-		tp.taccs = tp.taccs[ tp.accs %in% names(cg) & tp.taccs %in% names(ts) ]
-		tmat=tssmat[[tp]][,tp.accs]
-		emat=endmat[[tp]][,tp.taccs]
-		totest=which(rowSums(tssmat[[tp]])!=0 & rowSums(endmat[[tp]])!=0)
-		stopifnot(c('integer','numeric')%in%is(totest))
+		message('data matrices computed')
+		sapply(tssmat,dim)
+		sapply(endmat,dim)
+
+		#quantile normalization across tss if we are using the unaltered data
+		if(grepl('unprocessed',cage.data)){
+			tssmat=sapply(names(tssmat),function(tp){
+				apply(tssmat[[tp]],MARGIN=2,FUN=qnormvect)
+			})
+		}
+		#We now have matrices with the rows representing genes at a given timepoint 
+		###### 6 Now get correlations of matching libraries
+		#get the correlation for each tss
+		message('computing gene correlations')
+		gene.cors.tp[[setn]]=sapply(simplify=F,tps,function(tp){
+			tp.accs=accs[[tp]]
+			tp.taccs=taccs[[tp]]
+			tp.accs = tp.accs[ tp.accs %in% names(cg) & tp.taccs %in% names(ts) ]
+			tp.taccs = tp.taccs[ tp.accs %in% names(cg) & tp.taccs %in% names(ts) ]
+			tmat=tssmat[[tp]][,tp.accs]
+			emat=endmat[[tp]][,tp.taccs]
+			totest=which(rowSums(tssmat[[tp]])!=0 & rowSums(endmat[[tp]])!=0)
+			stopifnot(c('integer','numeric')%in%is(totest))
 			z=sapply(totest,function(i){
-			a =	tmat[i,]
-			b =	emat[i,]
-			#get the correlation over the comparable libraries
-			# cor.obj=cp.test(matrix(a),matrix(b))
-			# c('pval'=cor.obj$S.p.value,'cor'=cor.obj$correlation)
-			cor(a,b,meth='s')
+				a =	tmat[i,]
+				b =	emat[i,]
+				#get the correlation over the comparable libraries
+				# cor.obj=cp.test(matrix(a),matrix(b))
+				# c('pval'=cor.obj$S.p.value,'cor'=cor.obj$correlation)
+				cor(a,b,meth='s')
+			})
 		})
-	})
+	}
+}
 
 	# ####7 Now calculate teh pvalues for teh correlations via permutation
 	# #and the pval as computed by shuffling - very 
@@ -261,7 +274,7 @@ for(cage.data in list(
 		# heatscatter(x=rank(red)[names(pvals)],y= pvals,xlab='Rank total tagseq signal',ylab='cage/tagseq correlation -log10(pval)',log='',ylim=c(-1,1),cor=F)
 		# dev.off()
 	}
-}
+}}
 
 save(gene.cors.tp,file='data/objects/cage_tag_cors.object.R')
 save(gene.shuffle.pvals,file='data/objects/cage_tag_pvals.object.R')
@@ -300,7 +313,57 @@ sapply(1:ncol(combmat),function(i){
 	dev.off()
 })
 
+#Now compare library size norm and pl norm corrlation vs. signal on same graph with splines
+# pdf(paste0('pl_vs_libnorm_corsplines',tp,'.pdf'))
+pdf('/g/furlong/Harnett/TSS_CAGE_myfolder/analysis/norm_comparison_vs_tagseq.R/pl_vs_libnorm_corvsig.pdf')
+sparpar=0.3
+rst=rowSums(tssmat[[tp]])#rank in cage signal
+red=rowSums(endmat[[tp]])
+tp=tps[2]#timepoints
+setn=names(gene.cors.tp)[1]#name of set - library normalization
+cors=gene.cors.tp[[setn]][[tp]]
+cors=cors[names(cors)%in%names(rst)]
+rst=rank(rst)[names(cors)]#just the ones in both sets
+#plot points
+plot(cex=0.3,col='lightblue',x=rst,y=cors,,xlab='Rank in total cage signal',ylab='cage/tagseq spearman correlation',log='',ylim=c(-1,1))
+#fit spline
+lines(smooth.spline(spar=sparpar,rst,y=cors),lty=1,lwd=4,col='blue')
+#now select data for power law normalizaed stuff
+setn=names(gene.cors.tp)[2]
+cors=gene.cors.tp[[setn]][[tp]]
+cors=cors[names(cors)%in%names(rst)]
+#plot points
+points(cex=0.3,x=rst,y=cors,col='pink')
+#fit spline
+lines(smooth.spline(spar=sparpar,rst,y=cors),lty=1,lwd=4,col='red')
+legend(x='bottomleft',fill=c('blue','red'),legend=c('library_normalization','powerlaw_normalization'))
+dev.off()
 
 
+#Now compare library size norm and pl norm corrlation vs. signal on same graph with splines
+# pdf(paste0('pl_vs_libnorm_corsplines',tp,'.pdf'))
+pdf('/g/furlong/Harnett/TSS_CAGE_myfolder/analysis/norm_comparison_vs_tagseq.R/pl_vs_libnorm_pltagseq.pdf')
+sparpar=0.3
+rst=rowSums(tssmat[[tp]])#rank in cage signal
+red=rowSums(endmat[[tp]])
+tp=tps[2]#timepoints
+setn='cg.libnorm.ts.pl'#name of set - library normalization
+cors=gene.cors.tp[[setn]][[tp]]
+cors=cors[names(cors)%in%names(rst)]
+rst=rank(rst)[names(cors)]#just the ones in both sets
+#plot points
+plot(cex=0.3,col='lightblue',x=rst,y=cors,main='powerlaw vs. library size normalization - power law normalized Tagseq data',xlab='Rank in total cage signal',ylab='cage/tagseq spearman correlation',log='',ylim=c(-1,1))
+#fit spline
+lines(smooth.spline(spar=sparpar,rst,y=cors),lty=1,lwd=4,col='blue')
+#now select data for power law normalizaed stuff
+setn='cg.pl.map.ts.pl'
+cors=gene.cors.tp[[setn]][[tp]]
+cors=cors[names(cors)%in%names(rst)]
+#plot points
+points(cex=0.3,x=rst,y=cors,col='pink')
+#fit spline
+lines(smooth.spline(spar=sparpar,rst,y=cors),lty=1,lwd=4,col='red')
+legend(x='bottomleft',fill=c('blue','red'),legend=c('library_normalization','powerlaw_normalization'))
+dev.off()
 
 

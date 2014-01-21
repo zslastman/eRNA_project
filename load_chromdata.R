@@ -1,57 +1,43 @@
 setwd('~/Harnett/TSS_CAGE_myfolder')
 source('src/tss_cage_functions.R')
 genomesize <- sum(seqlengths(Dmelanogaster))#genome length
-file.chrom.rles<-'data/objects/chrom.rles.object.R'
-file.chrom_noctl.rles<- 'data/objects/chrom_noctl.rles.object.R'
-file.input.rles<-'data/objects/input.rles.object.R'
-file.chrom.rles.rpgc<-'data/objects/chrom.rles.rpgc.R'
-file.input.rles.rpgc<-'data/objects/input.rles.rpgc.R'
-file.chrom.rles.rpgc.sub.merge<-'data/objects/chrom.rles.rpgc.sub.merge.object.R'
 
-fraglength=190
-
-
-
-#list.files('/g/tier2/furlong/delhomme/projects/11_Histone_ChIP_seq/BiTS-ChIP/alignment/6-8h/bam/',pattern='Pol')
-
-#list.files(recursive=T,'data/chromatin/bam')
-
+kchromatinFolder = '/g/tier2/furlong/project/11_Histone_ChIP_seq/BiTS-ChIP/alignment/'
+fraglength=190=
 chrom_bam_files =  list(
-    PolII_6.8_R1='/g/tier2/furlong/delhomme/projects/11_Histone_ChIP_seq/BiTS-ChIP/alignment/6-8h/bam/B-PolII-Rpb3-6-8h.bam',
-    PolII_6.8_R2='/g/tier2/furlong/delhomme/projects/11_Histone_ChIP_seq/BiTS-ChIP/alignment/6-8h/bam/B51_PolII-Rpb3_6-8h.bam',
-    H3K27ac_6.8_R1='/g/tier2/furlong/delhomme/projects/11_Histone_ChIP_seq/BiTS-ChIP/alignment/6-8h/bam/B23-K27ac.bam',
-    H3K27ac_6.8_R2='/g/tier2/furlong/delhomme/projects/11_Histone_ChIP_seq/BiTS-ChIP/alignment/6-8h/bam/B-A-K27ac.bam',
-    H3K4me3_6.8_R1='/g/tier2/furlong/delhomme/projects/11_Histone_ChIP_seq/BiTS-ChIP/alignment/6-8h/bam/B24-K4me3.bam',
-    H3K4me3_6.8_R2='/g/tier2/furlong/delhomme/projects/11_Histone_ChIP_seq/BiTS-ChIP/alignment/6-8h/bam/B53_K4me3_6-8h.bam',
-    H3K4me1_6.8_R1='/g/tier2/furlong/delhomme/projects/11_Histone_ChIP_seq/BiTS-ChIP/alignment/6-8h/bam/B-E-K4me1.bam',
-    H3K4me1_6.8_R2='/g/tier2/furlong/delhomme/projects/11_Histone_ChIP_seq/BiTS-ChIP/alignment/6-8h/bam/B-F-K4me1.bam',
-    H3K79me3_6.8_R1='/g/tier2/furlong/delhomme/projects/11_Histone_ChIP_seq/BiTS-ChIP/alignment/6-8h/bam/B38_K79me3.bam',
-    H3K79me3_6.8_R2='/g/tier2/furlong/delhomme/projects/11_Histone_ChIP_seq/BiTS-ChIP/alignment/6-8h/bam/B52_K79me3_6-8h.bam',
-    H3K36me3_6.8_R1='/g/tier2/furlong/delhomme/projects/11_Histone_ChIP_seq/BiTS-ChIP/alignment/6-8h/bam/B02-K36me3.bam',
-    H3K36me3_6.8_R2='/g/tier2/furlong/delhomme/projects/11_Histone_ChIP_seq/BiTS-ChIP/alignment/6-8h/bam/B-B-K36me3.bam',
-    H3K27me3_6.8_R1='/g/tier2/furlong/delhomme/projects/11_Histone_ChIP_seq/BiTS-ChIP/alignment/6-8h/bam/B-K27me3-6-8h.bam',
-    H3K27me3_6.8_R2='/g/tier2/furlong/delhomme/projects/11_Histone_ChIP_seq/BiTS-ChIP/alignment/6-8h/bam/B54_K27me3_6-8h.bam'
+    PolII_6.8_R1= paste0( kchromatinFolder, '6-8h/bam/B-PolII-Rpb3-6-8h.bam'),
+    PolII_6.8_R2= paste0( kchromatinFolder, '6-8h/bam/B51_PolII-Rpb3_6-8h.bam'),
+    H3K27ac_6.8_R1= paste0( kchromatinFolder, '6-8h/bam/B23-K27ac.bam'),
+    H3K27ac_6.8_R2= paste0( kchromatinFolder, '6-8h/bam/B-A-K27ac.bam'),
+    H3K4me3_6.8_R1= paste0( kchromatinFolder, '6-8h/bam/B24-K4me3.bam'),
+    H3K4me3_6.8_R2= paste0( kchromatinFolder, '6-8h/bam/B53_K4me3_6-8h.bam'),
+    H3K4me1_6.8_R1= paste0( kchromatinFolder, '6-8h/bam/B-E-K4me1.bam'),
+    H3K4me1_6.8_R2= paste0( kchromatinFolder, '6-8h/bam/B-F-K4me1.bam'),
+    H3K79me3_6.8_R1= paste0( kchromatinFolder, '6-8h/bam/B38_K79me3.bam'),
+    H3K79me3_6.8_R2= paste0( kchromatinFolder, '6-8h/bam/B52_K79me3_6-8h.bam'),
+    H3K36me3_6.8_R1= paste0( kchromatinFolder, '6-8h/bam/B02-K36me3.bam'),
+    H3K36me3_6.8_R2= paste0( kchromatinFolder, '6-8h/bam/B-B-K36me3.bam'),
+    H3K27me3_6.8_R1= paste0( kchromatinFolder, '6-8h/bam/B-K27me3-6-8h.bam'),
+    H3K27me3_6.8_R2= paste0( kchromatinFolder, '6-8h/bam/B54_K27me3_6-8h.bam'))
+
+expect_true(all(sapply(chrom_bam_files,file.exists)))
   #  H3K36me3_6.8_R2='/g/tier2/furlong/delhomme/projects/11_Histone_ChIP_seq/BiTS-ChIP/alignment/6-8h/bam/B-K27me3-6-8h.bam'
-    
-    )
+
+  #  H3K36me3_6.8_R2='/g/tier2/furlong/delhomme/projects/11_Histone_ChIP_seq/BiTS-ChIP/alignment/6-8h/bam/B-K27me3-6-8h.bam'
+
 input_bam_files =  list(
     Input_6.8_R1='/g/tier2/furlong/delhomme/projects/11_Histone_ChIP_seq/BiTS-ChIP/alignment/6-8h/bam/B03-input.bam',
     Input_6.8_R2='/g/tier2/furlong/delhomme/projects/11_Histone_ChIP_seq/BiTS-ChIP/alignment/6-8h/bam/B-D-input.bam'
 )
 
-
-
 if(file.exists(file.chrom.rles.rpgc.sub.merge)){
   load(file.chrom.rles.rpgc.sub.merge)
   message('Chromatin rle files already present, loaded')
 }else{
-  
   message(paste0('\nloading the following files  -  \n',chrom_bam_files, '\n', input_bam_files))
-  #let's make this nice and neat with rapply later
-  
-  chrom.rles<-mclapply(mc.cores=10,chrom_bam_files,function(x)bam2coverage(x,doshift=T,fragment.length=180,use.size=F))
+  #read chromatin files
+  chrom.rles<-mclapply(mc.cores=10,chrom_bam_files,function(x)bam2coverage(x,doshift=T,fragment.length=fraglength,use.size=F))
   input.rles<-mclapply(mc.cores=10,input_bam_files,function(x)bam2coverage(x,doshift=F,doresize=F,use.size=F))
-  
   stopifnot(class(chrom.rles[[1]])=='SimpleRleList')
   
   names(chrom.rles)<-names(chrom_bam_files)#name them
@@ -60,8 +46,8 @@ if(file.exists(file.chrom.rles.rpgc.sub.merge)){
   save(chrom.rles,file=file.chrom.rles)
   save(input.rles,file=file.input.rles)
   
-  load(file.input.rles)
-  load(file.chrom.rles)
+  # load(file.input.rles)
+  # load(file.chrom.rles)
   
   message('rpgc normalization')
   chrom.gcov <- lapply(chrom.rles,function(j) sum(sapply(j, function(i) sum(as.numeric(i)))) / genome.size)
@@ -71,14 +57,12 @@ if(file.exists(file.chrom.rles.rpgc.sub.merge)){
   input.rles.rpgc<-mapply(input.rles,input.gcov,FUN=function(x,y){x/y})
   
   message('saving rpgc coverage')
-  
 #    load(file.chrom.rles.rpgc)
 #    load(file.input.rles.rpgc)
   save(chrom.rles.rpgc,file=file.chrom.rles.rpgc)
   save(input.rles.rpgc,file=file.input.rles.rpgc)
   
 #      load(file.chrom_noctl.rles.)
-  
   message('Input subtraction')
   input.rlelist.rpgc.merge<-(input.rles.rpgc[[1]]+input.rles.rpgc[[2]])/2#combine the input replicates
   chrom.rles.rpgc.sub<-sapply(chrom.rles.rpgc,function(srlelist){srlelist - input.rlelist.rpgc.merge})#subtract
@@ -91,10 +75,9 @@ if(file.exists(file.chrom.rles.rpgc.sub.merge)){
   
   #name
   names(chrom.rles.rpgc.sub.merge)<-(names(chrom_bam_files))[seq(from=1,to=length(chrom.rles),by=2)]
-  #get rid of R numbers
+  #get rid of R numbers since they're merged
   names(chrom.rles.rpgc.sub.merge)<-lapply(names(chrom.rles.rpgc.sub.merge),function(name){gsub(x=name,pattern='_R\\d',replacement='')})
   names(chrom.rles.rpgc.merge)<-lapply(names(chrom.rles.rpgc.sub.merge),function(name){gsub(x=name,pattern='_R\\d',replacement='')})
-  
   save(chrom.rles.rpgc.sub.merge,file=file.chrom.rles.rpgc.sub.merge)
   
 #   
@@ -176,13 +159,13 @@ names(chrompeaks.modencode)<-  gsub('.*//(\\w+?)_.*(\\d\\-\\dh)_.*','\\1_\\2',na
 
 
 # Modencode continous signal ----------------------------------------------
-
 #modencode data
-chrom.rles.modencode<-list(  
-  K27ac='data/modencode/coverage_wigs/4-8hr/H3K27ac-Developmental-Stage=Embryos-4-8-hr#Strain=Y-cn-bw-sp-ChIP-seq-Rep-1-ChIP-Dmel_r5.32-modENCODE_835.wig',
-  PolII='data/modencode/coverage_wigs/4-8hr/PolII-E4-8__density.wig'
-               )
-
+chrom.rles.modencode<-list(
+  K27ac_0.4h='data/modencode/coverage_wigs/0-4hr/H3K27ac-Developmental-Stage=Embryos-0-4-hr#Strain=Y-cn-bw-sp-ChIP-seq-Rep-1-ChIP-Dmel_r5.32-modENCODE_834.wig.gz',
+  K27ac_4.8h='data/modencode/coverage_wigs/4-8hr/H3K27ac-Developmental-Stage=Embryos-4-8-hr#Strain=Y-cn-bw-sp-ChIP-seq-Rep-1-ChIP-Dmel_r5.32-modENCODE_835.wig',
+  K27ac_8.12h='data/modencode/coverage_wigs/8-12hr/H3K27ac-Developmental-Stage=Embryos-8-12-hr#Strain=Y-cn-bw-sp-ChIP-seq-Rep-1-ChIP-Dmel_r5.32-modENCODE_836.wig.gz',
+  PolII_4.8h='data/modencode/coverage_wigs/4-8hr/PolII-E4-8__density.wig'
+)
 chrom.rles.modencode<-sapply(chrom.rles.modencode,function(wigfile){
   mark.modencode<-import(format='wig',wigfile)
   mark.modencode<-as(mark.modencode[chrs.keep],'GRanges')
@@ -207,3 +190,27 @@ if(!file.exists(file.dnase.rles)){
   message('saving this very large chromdata file')
   save(dnase.rles,file=file.dnase.rles)
 }else{load(file.dnase.rles)}
+
+
+
+
+
+
+################################################################################################
+# Also load dnase peaks ---------------------------------------------------
+#first just load the peaks for stages 10,11
+if(file.exists(file.dnase.peaks)){
+  load(file.dnase.peaks)
+}else{
+  dnase.files<-list.files(full.names=T,'/g/tier2/furlong/jdegner/THOMAS_ETAL_11_DATA/MACS_PEAKS/',pattern='STG1[01].*peaks.bed$')
+  f<-dnase.files[1]
+  dnase.peaks<-sapply(dnase.files,function(f){
+    tmp<-import(f,asRangedData=F)
+    tmp$name<-paste0(gsub(pattern='.*(STG.*R\\d).*','\\1',f),1:length(tmp))
+    tmp
+  })
+  dnase.peaks<-reduce(do.call('c',unname(dnase.peaks)))
+  dnase.peaks$name<-paste0('dnase_10.11',1:length(dnase.peaks))
+  dnase.peaks<-keepSeqlevels(dnase.peaks,chrs.keep)
+  save(dnase.peaks,file=file.dnase.peaks)
+}

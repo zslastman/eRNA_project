@@ -20,11 +20,15 @@ library(igraph)
 library(ggplot2)
 library(reshape2)
 library(LSD)
+library(testthat)
+library(pryr)
 tps=c('tp24h','tp68h','tp1012h')
 
 
 #library(snow)
 #library(spp)
+file.crm.annotations = 'data/objects/crm.annotation.object.R'
+file.gene.annotation = 'data/objects/gene.annotation.object.R'
 
 file.unprocessed.cage.tag.rles='data/objects/unprocessed.cage.tag.object.R'
 file.cg.pl<-'data/objects/cg.pl.object.R'
@@ -32,10 +36,10 @@ file.cage.tag.rles<-'data/objects/cage.rle.object.R'
 file.alltags<-'data/objects/alltags.object.R'
 file.alltags.gr<-'data/objects/alltags.gr.object.R'
 file.cage.tag.rles.rpgc<-'data/objects/cage.rpgc.object.R'
-file.accession.df<-'data/objects/accession.df.object.R'
+file.accession.df<-'data/objects/accession.df.full.object.R'
 file.alltags.rpgc<-'data/objects/alltags.rpgc.object.R'
 file.dnase.rles<-'data/objects/dnase.rles.object.R'
-file.crmgrs<-'data/objects/crmgrs.object.R'
+file.crm8008.gr<-'data/objects/crm8008.gr.object.R'
 file.lambdas<-'data/objects/lambdas.object.R'
 file.transcripts<-'data/objects/transcripts.object.R'
 file.tss<-'data/objects/tss.object.R'
@@ -44,6 +48,12 @@ file.synonyms<-'data/objects/synonyms.object.R'
 file.crm.list.binary<-'data/TF8008.txt'
 file.cad3<-'data/cad3.object.R'
 file.dnase.peaks<-'data/objects/dnase.peaks.R'
+file.chrom.rles<-'data/objects/chrom.rles.object.R'
+file.chrom_noctl.rles<- 'data/objects/chrom_noctl.rles.object.R'
+file.input.rles<-'data/objects/input.rles.object.R'
+file.chrom.rles.rpgc<-'data/objects/chrom.rles.rpgc.R'
+file.input.rles.rpgc<-'data/objects/input.rles.rpgc.R'
+file.chrom.rles.rpgc.sub.merge<-'data/objects/chrom.rles.rpgc.sub.merge.object.R'
 
 chrs.keep<-seqlevels(Dmelanogaster)[!grepl('U|M', seqlevels(Dmelanogaster))]
 si<-seqinfo(Dmelanogaster)[chrs.keep]
@@ -58,6 +68,59 @@ n<-names
 l<-length
 cn<-colnames
 rn<-rownames
+
+# #function that takes a list of TSS and for each overlapping group, choooses the one with the highest score
+# gr = tss.gr
+# gr = resize(gr, width=500,fix='center')
+# #now we reduce it down to the overlapping ares
+# overlap = reduce(gr)
+# #then we pick the best TSS in each overlap
+# ov = findOverlaps(overlap,gr)#get overlaps
+# ov = ov [!ov@queryHits==ov@subjectHits,]#not self overlaps
+# #go through each overlap, and if 
+
+#take in the grange, and the score vector
+
+
+#if there are overlaps, choose the one with the highest mean
+
+
+#generate nearest expr 
+#get the mean over the tss
+#take in a grange of crms
+#a grange object for the crm, take in the grange for the gtss
+#get the mean expression
+
+# transcripts.gr[nearest(crm8008.gr,transcripts.gr)]
+
+overlapsAny<-function(gr,peaklist,maxgap=50){
+  0 < rowSums(sapply(peaklist,function(peaks){
+    countOverlaps(gr,peaks,maxgap)
+  }))
+}
+
+
+#this function 
+GetNearestExpression <- function(gr,g.gr=genes.gr,t.gr=tss.gr,scorecol='tsscage'){
+  #get the nearest gene
+  nearestg.gr=g.gr[nearest(gr,g.gr)]
+  #Now define the score from the tss.gr object we're using
+  scores = mcols(t.gr)[,c('Gene',scorecol)]
+  #collapse the score across the area of the gene
+  scores[,2]=rowSums(scores[,2])
+  #order in order of score
+  scores = scores[ order( scores[,2] ,decreasing=T) ,]
+  #and take the first match for each of the nearest genes (the most eexpressed transcript)
+  scores[,scorecol][match( nearestg.gr$id ,scores$Gene)]
+}
+
+#function to get a 'gene density score' a la Tung et al
+#expand each gene to windowsize
+getGeneDensity <- function(gr,windowsize = 200000,genes=genes.gr){
+  suppressWarnings({gr=resize(gr,width=windowsize,fix='center')})
+  countOverlaps(gr,genes)
+}
+
 
 pdftmp<-function(expr){
   pdf('tmp.pdf')
@@ -229,7 +292,7 @@ combinegrs<-function(grlist){
 
 # Carries out Views on a GRange object ------------------------------------
 GRViews<-function(rle,gr){
-  stopifnot(gr==sort(gr))
+  if(gr!=sort(gr)){warn('unsorted GRanges object - returned views may not be in same order')}
   v=Views(rle[seqlevels(gr)],as(gr,'RangesList'))[seqlevels(gr)]
   v=v[sapply(v,function(x){length(x)!=0})]
   return(v)
@@ -558,7 +621,7 @@ getBestSingleWindow <- function (reg, w, chrs.keep, big=bigchrs, cage=cg) {
 
 
   #make sure th
-get.best.window.mat <- function (reg, w, chrs.keep, big=bigchrs, cage=cg) {
+getBestWindowMat <- function (reg, w, chrs.keep, big=bigchrs, cage=cg) {
    #make sure th
   stopifnot(all(seqnames(reg)%in%big))
   stopifnot(reg==sort(reg))
@@ -629,8 +692,6 @@ deseqNormalize<-function(m,return.just.sizefactors=F){
     splitfacts<-unlist(mapply(names(m),nrows,FUN=function(name,num){rep(name,num)}))
     m<-do.call(rbind,m)
   }
-
-
 
   require(DESeq)
   oldrownames<-rownames(m)
@@ -866,4 +927,4 @@ scorefunc<-function(x){rowMeans(x)}
 
 # dev.off()
 # rlelist2=chrom.rles$PolII_6.8_R1
-# rlecovplot(rlelist1=input.rles$Input_6.8_R1,rlelist2=chrom.rles$PolII_6.8_R1,g=resize(crmgrs[1],20000,fix='center'))
+# rlecovplot(rlelist1=input.rles$Input_6.8_R1,rlelist2=chrom.rles$PolII_6.8_R1,g=resize(crm8008.gr[1],20000,fix='center'))

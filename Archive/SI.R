@@ -20,13 +20,13 @@ accs<-names(cage.tag.rles)
 #define the ranges we want to look at
 
 #first make a shortened set to do the trial runs on
-#grs=list(crm8008=crmgrs,CAD3=cad3.gr,TSS=tss.gr)
+#grs=list(crm8008=crm8008.gr,CAD3=cad3.gr,TSS=tss.gr)
 # cad3.gr=cad3.gr[1:20]
 # accs<-names(cage.tag.rles)[1:3]
 # tss.gr<-tss.gr[ tss.gr$TrID%in%unlist(cad3.gr$transcripts)]
 
 
-grs=list(crm8008=crmgrs,CAD3=cad3.gr,TSS=tss.gr)
+grs=list(crm8008=crm8008.gr,CAD3=cad3.gr,TSS=tss.gr)
 
 
 #get a giant grange
@@ -127,7 +127,7 @@ cad3.gr$dist.to.nearest.tss<-dist$distance
 
 
 #1b) also for the 8008
-dist<-distanceToNearest(crmgrs,tss.gr)
+dist<-distanceToNearest(crm8008.gr,tss.gr)
 cad.nearest.tss.gr<-tss.gr[dist$subjectHits]
 cad.nearest.tss.gr$dist<-dist$distance
 
@@ -265,7 +265,7 @@ s$
   
 
 
-cage.mat<-get.best.window.mat(crmgrs[1:10],100,cage=cage.tag.rles.rpgc)
+cage.mat<-getBestWindowMat(crm8008.gr[1:10],100,cage=cage.tag.rles.rpgc)
 cage.mat
 jpeg('tmp.jpeg')
 print(plot(cage.mat[6,],cage.mat[7,]))

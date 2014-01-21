@@ -24,7 +24,7 @@ multilines<-names(table(accession.df$line))[table(accession.df$line)==4]
 
 
 
-RleViewsList(rleList=cage.tag.rles[[1]],rangesList=crmgrs)
+RleViewsList(rleList=cage.tag.rles[[1]],rangesList=crm8008.gr)
 
 
 repmats<-mclapply(multilines,mc.cores=10,function(line){

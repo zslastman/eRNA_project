@@ -1,8 +1,8 @@
 
 #checking out RNAP at crms
-rlecovplot(rlelist1=cage.tag.rles[[2]][[2]]*100,rlelist2=chrom.rles.rpgc.sub.merge[[1]]*100,g=resize(crmgrs[1],20000,fix='center'))
+rlecovplot(rlelist1=cage.tag.rles[[2]][[2]]*100,rlelist2=chrom.rles.rpgc.sub.merge[[1]]*100,g=resize(crm8008.gr[1],20000,fix='center'))
 
-rlecovplot(rlelist1=cage.tag.rles[[2]][[2]]*100,rlelist2=chrom.rles.rpgc.sub.merge[[1]]*100,g=resize(crmgrs[1],20000,fix='center'))
+rlecovplot(rlelist1=cage.tag.rles[[2]][[2]]*100,rlelist2=chrom.rles.rpgc.sub.merge[[1]]*100,g=resize(crm8008.gr[1],20000,fix='center'))
 
 
 

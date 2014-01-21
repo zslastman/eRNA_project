@@ -1,7 +1,7 @@
 setwd ( '/g/furlong/Harnett/TSS_CAGE_myfolder/' )
 source ( 'src/tss_cage_functions.R' )
 
-# load ( 'data/objects/crmgrs.object.R' )
+# load ( 'data/objects/crm8008.gr.object.R' )
 # load ( 'data/objects/cad3.gr.object.R' )
 
 
@@ -13,12 +13,11 @@ load(file.transcripts)
 load('data/objects/accession.df.full.object.R')
 load('data/objects/tagseq.df.object.R')
 #cage and tagseq data
-load('data/objects/all.cage.unprocessed.object.R')
-cg=cage.tag.rles
-rm(cage.tag.rles)
+load('data/objects/cg.pl.map.object.R')
+cg=cg.pl.map
 load('data/objects/all.tagseq.unprocessed.R')
-ts=tagseq.rles
-rm(tagseq.rles)
+ts=ts
+rm(ts)
 iterations=1000#number of iterations when doing empirical pvalues
 #names of timepoints
 tps=c('tp24h','tp68h','tp1012h')
@@ -68,7 +67,8 @@ tagseq.peaks=sapply(tagseq.peaks,function(f){
 })
 names(tagseq.peaks) = tps
 #create 500bp windows around the end of trnascripts for finding our tagseq peaks
-ends.gr=resize(transcripts.gr,width=500,fix='end')
+filt.transcripts.gr = transcripts.gr[countOverlaps(transcripts.gr,transcripts.gr)==1]
+ends.gr=resize(filt.transcripts.gr,width=500,fix='end')
 ends.gr=shift(ends.gr,250)
 
 
@@ -81,7 +81,7 @@ for (tp in tps){
 	fov = findOverlaps(ends.gr,tagseq.peaks[[tp]])
 	fov = fov[!duplicated(fov@queryHits) & !duplicated(fov@subjectHits),]
 	#get the tss
-	utss=resize(transcripts.gr[ fov@queryHits ],width=1,fix='start')
+	utss=resize(filt.transcripts.gr[ fov@queryHits ],width=1,fix='start')
 	utss=sort(resize(utss,width=500,fix='center'))
 	#and en of transcripts from the peak data
 	uends = sort(tagseq.peaks[[tp]][ fov@subjectHits ])
@@ -103,13 +103,16 @@ for (tp in tps){
 		v[as.vector(strand(uends)=='+')]=unlist(viewSums(GRViews(ts[[acc]]$pos,uends[strand(uends)=='+'])))
 		v
 	}))
-	colnames(endmat[[tp]])=unique(tp.taccs)
+	colnames( endmat[[tp]] )=unique(tp.taccs)
 	#fix the names
 	rownames(tssmat[[tp]])=rownames(endmat[[tp]])=utss$TrID
-	list()
+	#normalize the 3' tagseq
+	gcovs=with(tagseq.df,genome.coverage[match(unique(tp.taccs),accession)])
+	endmat[[tp]] = sweep(endmat[[tp]],2,gcovs,FUN='*' )
 }
-dim(tssmat[[1]])
-dim(endmat[[2]])
+
+dim(tssmat[[3]])
+dim(endmat[[3]])
 #We now have matrices with the rows representing genes at a given timepoint 
 
 
@@ -118,8 +121,8 @@ dim(endmat[[2]])
 
 #get the correlation for each tss
 gene.cors.tp=sapply(simplify=F,tps,function(tp){
-	tp.accs=accs[[tp]]
-	tp.taccs=taccs[[tp]]
+	tp.accs  = accs[[tp]]
+	tp.taccs = taccs[[tp]]
 		sapply(1:nrow(tssmat[[tp]]),function(i){
 		#get the correlation over the comparable libraries
 		#vector.pvals.shuffle(tssmat[i,accs],endmat[i,taccs])
@@ -136,7 +139,6 @@ gene.shuffle.pvals=sapply(simplify=F,tps,function(tp){
 		#vector.pvals.shuffle(tssmat[i,accs],endmat[i,taccs])
 })
 
-save('tmp.image.R')
 #output the mean of all correlations
 
 library(ggplot2)
@@ -150,18 +152,75 @@ for(tp in tps){
 	dev.off()
 	#plot our correlations as a fuction of mean cage
 	pdf(paste0('analysis/5primer_3prime_covariance/correlation_ranked_by_cage_scatter_',tp,'.pdf'))
-	heatscatter(x=log2(rowSums(tssmat[[tp]])),y=gene.cors.tp[[tp]][rank(rowSums(tssmat[[tp]]))],xlab='Log2 total cage signal',ylab='cage/tagseq spearman correlation',log='x',ylim=c(-1,1),cor=F)
+	heatscatter(x=log2(rowSums(tssmat[[tp]])),y= gene.cors.tp[[tp]],xlab='Log2 total cage signal',ylab='cage/tagseq spearman correlation',log='',ylim=c(-1,1),cor=F)
 	dev.off()
 	#plot our correlations as a fuction of mean tagseq
 	pdf(paste0('analysis/5primer_3prime_covariance/correlation_ranked_by_tagseq_scatter',tp,'.pdf'))
-	heatscatter(x=log2(rowSums(endmat[[tp]])),y=gene.cors.tp[[tp]][rank(rowSums(endmat[[tp]]))],xlab='log2 total tagseq signal',ylab='cage/tagseq spearman correlation',log='x',ylim=c(-1,1),cor=F)
+	heatscatter(x=log2(rowSums(endmat[[tp]])),y=gene.cors.tp[[tp]],xlab='log2 total tagseq signal',ylab='cage/tagseq spearman correlation',log='',ylim=c(-1,1),cor=F)
+	dev.off()
+}
+for(tp in tps){
+	#plot our correlations as a fuction of mean cage
+	pdf(paste0('analysis/5primer_3prime_covariance/correlation_ranked_by_rankcage_scatter_',tp,'.pdf'))
+	heatscatter(x=rank(rowSums(tssmat[[tp]])),y=gene.cors.tp[[tp]],xlab='rank total cage signal',ylab='cage/tagseq spearman correlation',log='',ylim=c(-1,1),cor=F)
+	dev.off()
+	#plot our correlations as a fuction of mean tagseq
+	pdf(paste0('analysis/5primer_3prime_covariance/correlation_ranked_by_ranktagseq_scatter',tp,'.pdf'))
+	heatscatter(x=rank(rowSums(endmat[[tp]])),y=gene.cors.tp[[tp]],xlab='rank total tagseq signal',ylab='cage/tagseq spearman correlation',log='',ylim=c(-1,1),cor=F)
 	dev.off()
 }
 
 #maybe show that different simulated data sets return different normalized methods as best via this method?
 # gene.cors=gene.cors[1:length(gene.cors)]
 
+#let's inspect the guys with weirdly high correlations - rank 800 to 1000 for cage at 68hrs will do this
+highcorinds=order(rowSums(tssmat[[tp]]))[400:800]
+highcorinds=which(gene.cors.tp[[tp]]>0.6 & rank(rowSums(tssmat[[tp]])) %in% 500:800  )
+mean(gene.cors.tp[[tp]][highcorinds],na.rm=T)
+#
+j=1
 
-save('tmp.image.R')
+doscatter<-function(i){print(qplot( tssmat[[tp]][i,tp.accs] ,endmat[[tp]][i,tp.taccs],main='5prime vs 3prime scatterplot'))}
+doscatter<-function(i){heatscatter( tssmat[[tp]][i,tp.accs] ,endmat[[tp]][i,tp.taccs],main='5prime vs 3prime scatterplot')}
+
+tp.accs  = accs[[tp]]
+tp.taccs = taccs[[tp]]
+i=highcorinds[j:(j+10)]
+#
+# ggsave(file='tmp.pdf',)
+pdf('tmp.pdf')
+for(n in i){doscatter(n)}
+dev.off()
+j=j+10
+
+
+#Now do our correlation plot but also plot the nubmer of zeros
+zeronum=apply(tssmat[[tp]],1,function(x){sum(x==0)})
+summedsig=rank(rowSums(tssmat[[tp]]))
+pdf('tmp.pdf')
+heatscatter(x=summedsig,y=gene.cors.tp[[tp]],xlab='rank total cage signal',ylab='cage/tagseq spearman correlation',log='',ylim=c(-1,1))
+par(new=T)
+plot(x=summedsig,y=zeronum,xlab='',ylab='Number of zeroes',log='')
+par(new=F)
+heatscatter(x=zeronum,y= gene.cors.tp[[tp]],xlab='Number of zeroes',ylab='correlation',log='')
+dev.off()
+
+
+#Now do our correlation plot but also plot the nubmer of  ones
+
+nonzeromin<-function(x){min(x[x!=0])}
+singletagnorm=sapply(cg.pl.map,function(n){nonzeromin(n[[1]][[1]])})
+
+pdf('tmp.pdf')
+plot(x=rank(rowSums(tssmat[[tp]])),y=gene.cors.tp[[tp]],xlab='rank total cage signal',ylab='cage/tagseq spearman correlation',log='',ylim=c(-1,1))
+par(new=T)
+plot(x=rank(rowSums(tssmat[[tp]])),y= apply(tssmat[[tp]],1,function(x){sum(x%in%singletagnorm)}),xlab='',ylab='Number of zeroes',log='')
+dev.off()
+
+#run experiment to see if scalings can generate artificial correlations.
+#re
+
+
+
 
 

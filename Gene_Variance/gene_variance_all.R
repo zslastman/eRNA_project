@@ -6,22 +6,13 @@ source ( 'src/tss_cage_functions.R' )
 #load cage data and tagseq data
 load(file.tss)
 load(file.synonyms)
-cg=cage.tag.rles
-rm(cage.tag.rles)
+load('data/objects/cg.object.R')
+load('data/objects/cg.pl.object.R')
+
 #timepoints
 outfolder='analysis/gene_variance_all'
 tps=c('tp24h','tp68h','tp1012h')
 dir.create(outfolder)
-
-####E     collect info for all transcripts
-message('collect info for all transcripts')
-for now just use   counts
-cgenv<-new.env()
-# cage.data='/g/furlong/Harnett/TSS_CAGE_myfolder/data/objects/cg.pl.object.R'
-cage.data='/g/furlong/Harnett/TSS_CAGE_myfolder/data/objects/all.cage.unprocessed.object.R'
-load(file=cage.data,env=cgenv)
-cg=cgenv[[ls(cgenv)[1]]]
-
 
 ####F Load info on gene function
 #First we load the FBgn : Go file
@@ -35,11 +26,15 @@ fbgn2symb=fb_go.df$symb[match(fbgn2symb,fb_go.df$FBgn)]
 fbgn_fbtr_fbpp.df <- read.delim(header=F, comment.char='#',stringsAsFactors=F,sep='\t','/g/furlong/Harnett/TSS_CAGE_myfolder/data/fbgn_fbtr_fbpp_fb_2013_06.tsv.gz' )
 colnames(fbgn_fbtr_fbpp.df) <- c('FBgn','FBtr','FBpp')
 #Also load table of FBgns and gene info
-
 #add
-tss.gr$unp.cage=sapply(names(cage.tag.rles),function(acc){
-	unlist(viewSums(GRViews(cage.tag.rles[[acc]]$both,resize(tss.gr,width=500,fix='center'))))
+tss.gr$unp.cage = sapply(names(cg),function(acc){
+	unlist(viewSums(GRViews(cg[[acc]]$both,resize(tss.gr,width=500,fix='center'))))
 })
+#add
+tss.gr$tsscage = sapply(names(cg.pl),function(acc){
+	unlist(viewSums(GRViews(cg.pl[[acc]]$both,resize(tss.gr,width=500,fix='center'))))
+})
+
 
 #We want a function that takes in a go term, and outputs FBtrs
 golist=list(
@@ -58,6 +53,7 @@ Biological_Adhesion='GO:0022610',
 Metabolic_Process='GO:0008152',
 Reproduction='GO:0000003',
 Behavior_defective='GO:0007610')
+
 go_tr_search<-function(goterms,fbgo=fb_go.df,fbtr=fbgn_fbtr_fbpp.df){
 	fbgns = with(fbgo,FBgn[which(GO%in%goterms)])
 	# stopifnot(length(fbgns)>0)
@@ -67,19 +63,13 @@ go_tr_search<-function(goterms,fbgo=fb_go.df,fbtr=fbgn_fbtr_fbpp.df){
 #now ge the TrIDs for each Go
 gotrlist=sapply(golist,go_tr_search)
 sapply(gotrlist,length)[]
-
-#back up the matrix
-
-alltssmat=tss.gr$tsscage
+#vector for converting fbgns to symbols
+fbgn2symb=unique(fb_go.df$symb)
+names(fbgn2symb)=unique(fb_go.df$FBgn)
 
 #very simple approach - we sort our TFs by mean, split into facets by GO term,
 #and then produce boxplots for each one 
-fbgn2symb=unique(fb_go.df$symb)#vector for converting fbgns to symbols
-names(fbgn2symb)=unique(fb_go.df$FBgn)
-
-go=names(gotrlist)[c]
 tp=tps[1]
-
 goodgos=names(gotrlist)[-c(1,4,8,10,11,12,15)]
 for(go in goodgos){
 	for(tp in tps){
@@ -102,22 +92,16 @@ for(go in goodgos){
 		mdat$symb = factor( mdat$symb ,levels = unique(fbgn2symb[levelfbgns] ) )
 		mdat$logval = log10(mdat$value)
 		mdat$logval[mdat$logval==-Inf]=0
-		dim(mdat)
-
-
 		#only ones with reasonable high mean
 		#now plot the boxplots
 		ggsave(paste0(outfolder,'/expr_boxplots_log10_',tp,'_',go,'.pdf'),width=21,
 			qplot(data=mdat[],geom='boxplot',x=symb,color=symb,y=logval,ylab='Log10 expression',main=paste0('Expression_Boxplots_ Go term:\n',go,'\ntimepoint ',tp))+
 			scale_x_discrete(labels='')+
 			guides(col=guide_legend(ncol=3,size=0.2))
-			)
-}
+		)
+	}
 }
 # 
-
-
-
 #Let's write a function that calculates dispersion using a set of input vectors
 log_disp<-function(alltssmat){
 	logalltssmat=log(alltssmat)
@@ -128,9 +112,7 @@ log_disp<-function(alltssmat){
 	dispersion=lognvar - 1/tagcounts
 }
 
-DESeq_dis<-function(alltssmat){
 
-}
 
 
 
@@ -155,8 +137,9 @@ for(tp in c('24h','68h','1012h')){
 	tagcounts=rowSums(alltssmat)
 	lcounts=log(tagcounts)
 	above.cutoff=tagcounts>100
-	dispersion=lognvar - 1/tagcounts
+	dispersion=lognvar - 
 	disps[[tp]]=dispersion
+	#let's also try a more sophisticated dispersion - using our powerlaw normalized ratios to substract ut posson variance
 	#now plot this as a function of mean
 	pdf(paste0('analysis/gene_variance_all/var_minus_oneovermean',tp,'.pdf'))
 	heatscatter(rowSums(logalltssmat),dispersion,xlab='log normalized count - mean',ylab='log normalized count - dispersion')

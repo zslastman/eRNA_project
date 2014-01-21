@@ -105,8 +105,8 @@ coverageplot(opposite=T,
 
 
 coverageplot(opposite=T,
-             Views(rlelist1[[chr]],ranges(crmgrs[30])),
-             Views(rlelist2[[chr]],ranges(crmgrs[30])))
+             Views(rlelist1[[chr]],ranges(crm8008.gr[30])),
+             Views(rlelist2[[chr]],ranges(crm8008.gr[30])))
 
 
 
@@ -155,7 +155,7 @@ exprlelist<-mclapply(mc.cores=10,names(rlelist),function(chr){
   Rle(exprle)
 })
 names(exprlelist)<-names(rlelist)
-seqlengths(crmgrs)
+seqlengths(crm8008.gr)
 sapply(exprlelist,length)
 sapply(PolII_68h_R1_B_1bp,length)
 sapply(PolII_68h_10bp_Merged_ControlSubtracted,length)
@@ -167,7 +167,7 @@ length(PolII_68h_10bp_Merged_ControlSubtracted$chr2L)
 length(exprle)
 
 
-coverageplot(Views(rlelist=PolII_68h_R1_B_1bp,gr=crmgrs[2])$chr2R)
-coverageplot(Views(as(PolII_68h_R1_B_1bp,'SimpleRleList'),as(crmgrs[2],'RangesList')))
+coverageplot(Views(rlelist=PolII_68h_R1_B_1bp,gr=crm8008.gr[2])$chr2R)
+coverageplot(Views(as(PolII_68h_R1_B_1bp,'SimpleRleList'),as(crm8008.gr[2],'RangesList')))
 
-seqlengths(crmgrs)
+seqlengths(crm8008.gr)

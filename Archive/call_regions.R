@@ -10,7 +10,7 @@ act<-list(
   transcripts.gr,
   cad3.gr,
 #  lincRNA.gr,
-  crmgrs
+  crm8008.gr
 )
 
 act<-sapply(act,  function(gr){ mcols(gr) <-NULL;gr})

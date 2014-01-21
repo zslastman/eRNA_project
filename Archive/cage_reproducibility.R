@@ -12,7 +12,7 @@ tss.gr$active68<-countOverlaps(tss.gr,active68.gr)>0
 #have to remove metadata to concatenate them
 crms.filtered =  crms.all
 #put the names back in
-#crms.filtered$name<-c(crmgrs$id,cad3.gr$name)
+#crms.filtered$name<-c(crm8008.gr$id,cad3.gr$name)
 crms.filtered$intergenic<-distanceToNearest(crms.filtered,transcripts.gr)$distance>intergenic_dist
 
 #filter out those near genes
@@ -35,7 +35,7 @@ crms.filtered$H3K4me3_peak<-
 
 intergenic.regions <-  gaps(do.call(c,lapply(
   list(
-  crmgrs,
+  crm8008.gr,
   cad3.gr,
   transcripts.gr,
   chrompeaks.modencode[['K4me3_4-8h']],
@@ -46,7 +46,7 @@ intergenic.regions <-  gaps(do.call(c,lapply(
 #and our 'inactive' windows, which are the same, only without even K4me1
 intergenic.inactive.regions <- gaps(do.call(c,lapply(
   list(
-    crmgrs,
+    crm8008.gr,
     cad3.gr,
     transcripts.gr,
     chrompeaks.modencode[['K4me3_4-8h']],

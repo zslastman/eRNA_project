@@ -95,11 +95,11 @@ names(c.sum)<-chrs.keep
 
 
 #lets check the positioning is okay
-crmgrs[7009]
+crm8008.gr[7009]
 
 
 
-RleViewsList(rleList = cage.tag.rles[[1]], rangesList = crmgrs[1:3])
+RleViewsList(rleList = cage.tag.rles[[1]], rangesList = crm8008.gr[1:3])
 
 
 #  concatenate RleLists for easy access ------------------------

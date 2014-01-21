@@ -251,7 +251,7 @@ qplot(data=cumsum.df,color=acc,y=freq,x=as.numeric(level),log='xy',geom='line',a
 
 #Show the effect this has on diffferent magnitudes of tss
 load(file.tss)
-load(file.crmgrs)
+load(file.crm8008.gr)
 load(file.cad3)
 source('src/tss_cage_functions.R')
 w=100
@@ -259,11 +259,11 @@ w=100
 #make list of grs
 active.tss.gr<-tss.gr[ tss.gr$active68]
 active.tss.gr<- active.tss.gr[ seqnames(active.tss.gr)%in%bigchrs]
-gr=combinegrs(list(cad3=cad3.gr,crm=crmgrs,tss=active.tss.gr))
+gr=combinegrs(list(cad3=cad3.gr,crm=crm8008.gr,tss=active.tss.gr))
 gr=sort(gr)
 
 #get the matrix with info for each line on each of our grs
-gr$cagemat=get.best.window.mat(reg=gr,w=300,chrs.keep,bigchrs,cage=cg[accs])
+gr$cagemat=getBestWindowMat(reg=gr,w=300,chrs.keep,bigchrs,cage=cg[accs])
 
 #is ther ea differential contribution from different libraries causing the problem?
 rs=rowSums(gr$cagemat)

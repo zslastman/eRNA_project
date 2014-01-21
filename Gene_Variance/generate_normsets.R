@@ -12,7 +12,7 @@ rootfolder='/g/furlong/Harnett/TSS_CAGE_myfolder/'
 
 #a)library size
 cg.libnorm=sapply(simplify=F,names(cg),function(acc){
-	sapply(c('pos','neg'),function(strand){
+	sapply(c('pos','neg','both'),function(strand){
 		cg[[acc]][[strand]]/with(accession.df,genome.coverage[accession==acc])
 	})
 })

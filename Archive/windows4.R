@@ -11,12 +11,12 @@ rpgc.step.num<-20
 pval.step.num<-10
 prec.cutoffs<-c(0.8,0.85,0.9,0.95)
 
-load(file.crmgrs)
+load(file.crm8008.gr)
 load(file.cage.tag.rles)
 load(file.accession.df)
 
 regs=list(
-  crm8008=crmgrs,
+  crm8008=crm8008.gr,
   int=import(con='analysis/random.intergenic.bed',asRangedData=F,seqinfo=si),
   cad3pos=import(con='analysis/cad3.pos.bed',asRangedData=F,seqinfo=si),
   cad3neg=import(con='analysis/cad3.neg.bed',asRangedData=F,seqinfo=si)
@@ -82,10 +82,10 @@ load(file='data/objects/cagecountmatlist.w4.object.R')
 message('Done with data matrices')
 
 setlist=list(
-  tfset=list(crmgrs$in.tf.pos,crmgrs$in.tf.neg),
-  tf.27ac.set=list(crmgrs$in.tf.pos & crmgrs$H3K27ac,crmgrs$in.tf.neg & !crmgrs$H3K27ac),
-  tf.dnase.set=list(crmgrs$in.tf.pos & crmgrs$high.dnase,crmgrs$in.tf.neg & !crmgrs$low.dnase),
-  tf.dnase.27ac.set=list(crmgrs$in.tf.pos & crmgrs$H3K27ac & crmgrs$high.dnase,crmgrs$in.tf.neg & crmgrs$low.dnase & !crmgrs$H3K27ac)
+  tfset=list(crm8008.gr$in.tf.pos,crm8008.gr$in.tf.neg),
+  tf.27ac.set=list(crm8008.gr$in.tf.pos & crm8008.gr$H3K27ac,crm8008.gr$in.tf.neg & !crm8008.gr$H3K27ac),
+  tf.dnase.set=list(crm8008.gr$in.tf.pos & crm8008.gr$high.dnase,crm8008.gr$in.tf.neg & !crm8008.gr$low.dnase),
+  tf.dnase.27ac.set=list(crm8008.gr$in.tf.pos & crm8008.gr$H3K27ac & crm8008.gr$high.dnase,crm8008.gr$in.tf.neg & crm8008.gr$low.dnase & !crm8008.gr$H3K27ac)
 )
 
 
@@ -153,8 +153,8 @@ for (w in as.character(window.sizes)){
     cagecountmats<-cagecountmatlist[[w]]
     cagecountmats.r<-cagecountmatlist.r[[w]]
     
-    #we need the annotation from the 'makeregions' script which should be in crmgrs
-    if( is.null(crmgrs$high.dnase) | is.null(crmgrs$in.tf.pos)){stop('Missing annotation of crm object - run makeregions.')}
+    #we need the annotation from the 'makeregions' script which should be in crm8008.gr
+    if( is.null(crm8008.gr$high.dnase) | is.null(crm8008.gr$in.tf.pos)){stop('Missing annotation of crm object - run makeregions.')}
     stopifnot(!NA%in%cagecountmats.r[[1]][,1] )#check cagecountmats.r looks okay
     
     #calculate the summed 
@@ -164,7 +164,7 @@ for (w in as.character(window.sizes)){
     pdf(paste0('analysis/rocplots_pos_neg/summ.roc.',setn,'.',w,'.pdf'))
     
 #     
-#     ROCfunc(pos=crmgrs$allsum.rpgc[ crmgrs$in.tf.pos],neg=crmgrs$allsum.rpgc[ crmgrs$in.tf.neg],
+#     ROCfunc(pos=crm8008.gr$allsum.rpgc[ crm8008.gr$in.tf.pos],neg=crm8008.gr$allsum.rpgc[ crm8008.gr$in.tf.neg],
 #             main='ROC curve for Summed Unnormalized Tags,Pos crms vs Neg Crms',
 #             sub=paste0('windowsize ',w))
 #       ROCfunc(pos=cagecountmatlist[[w]][[1]][posset],neg=cagecountmatlist[[w]][[1]][negset],

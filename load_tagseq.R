@@ -8,7 +8,7 @@ setwd(dir ='/g/furlong/Harnett/TSS_CAGE_myfolder/')
 source('src/tss_cage_functions.R')
 
 #1 Read in files
-tagseq.files = list.files('/tmp/mdavis/enrico_reads/matt',full.names=T,pattern='Tagseq')
+tagseq.files = list.files('/g/furlong/mdavis/projects/enrico/data/local_bams',full.names=T,pattern='Tagseq.*.bam$')
 linetable    = read.table('data/line_name_table.txt',header=T)
 
 	
@@ -33,22 +33,47 @@ tagseq.df$timepoint            =gsub('(\\d+)_(\\d+)','\\1\\2h',tagseq.df$timepoi
 save(tagseq.df,file            ='data/objects/tagseq.df.object.R')  
 
 #3 Process the BAM files, name them with the dataframe, creating and naming our Rle list of stucture name->strand->chr
-tagseq.rles<-mclapply(mc.cores=20,mc.cleanup=T,tagseq.files,function(x)bam2coverage(x,doshift=F,doresize=F,stranded=T))
-names(tagseq.rles)<-tagseq.df$accession#name them
+ts<-mclapply(mc.cores=20,mc.cleanup=T,tagseq.files,function(x)bam2coverage(x,doshift=F,doresize=F,stranded=T))
+names(ts)<-tagseq.df$accession#name them
  #create a third strand for each library with the other two summed
-for(acc in names(tagseq.rles)){tagseq.rles[[acc]]$both<-tagseq.rles[[acc]]$pos+tagseq.rles[[acc]]$neg}
+for(acc in names(ts)){ts[[acc]]$both<-ts[[acc]]$pos+ts[[acc]]$neg}
 #calculate size of  library and put this in the dataframe
 tagseq.df$library.size<-sapply(as.character(tagseq.df$accession),function(acc){
-   sum(as.numeric(sum(tagseq.rles[[as.character(acc)]]$both)))
+   sum(as.numeric(sum(ts[[as.character(acc)]]$both)))
 })
 tagseq.df$genome.coverage<-(tagseq.df$library.size/sum(seqlengths(si)))
 #save
 save(tagseq.df,file= 'data/objects/tagseq.df.object.R' )  
-save(tagseq.rles,file='data/objects/all.tagseq.unprocessed.R')  
+save(ts,file='data/objects/ts.object.R')  
 #load('data/objects/tagseq.df.object.R')
 #load('data/objects/all.tagseq.unprocessed.R')
 
-#4 create a summed alltags object for each timepoint
+
+
+## 4  do the power law normalization 
+fits<-sapply(tagseq.df$accession,function(acc){
+  sitecounts=sort(c(unlist(unname(ts[[acc]][['pos']])),unlist(unname(ts[[acc]][['neg']]))))
+  sitecounts=sitecounts[sitecounts!=0]
+  fit=power.law.fit(as.vector(sitecounts),xmin=200)#not that power.law.fit excludes the lower count numbers
+  total.tags=sum(sitecounts)
+  o=getOffset(fit$alpha,total.tags)#calculate the offset (second parameter)
+  c(fit,offset=o,tagcount=total.tags)#now tack it onto the fit list and return
+})
+tagseq.df$alpha<-as.numeric(fits['alpha',])
+mean.alpha=mean(tagseq.df$alpha)
+r.offset <-getOffset(mean.alpha,refsize)
+tagseq.df$offset<-as.numeric(fits['offset',])
+save(tagseq.df,file='data/objects/tagseq.df.full.object.R')
+#4a now finally normalize all of our cage libraries to a common power law reference
+ts.pl<-mapply(SIMPLIFY=F,names(ts),tagseq.df$alpha,tagseq.df$offset,FUN=function(acc,alpha,offset){
+   lapply(ts[[acc]],function(srle){ 
+    pl.norm(srle,x.alpha=alpha,x.offset=offset[[1]])
+  })
+})
+save(ts.pl,file='data/objects/ts.pl.object.R')
+
+
+#5 create a summed alltags object for each timepoint
  message('summing tagseq tags')
  alltagseq=sapply(simplify=F,split(ts,as.character(tagseq.df$timepoint)),function(alltags){
  	alltags=alltags
@@ -65,7 +90,7 @@ save(tagseq.rles,file='data/objects/all.tagseq.unprocessed.R')
  }
  save(alltagseq,file ='data/objects/alltagseq.object.R')
 
-#5 load up the peaks and creat files for these as well.
+#6 load up the peaks and creat files for these as well.
 tagseq.peaks=list(
 	tp24=read.delim('/g/furlong/Harnett/TSS_CAGE_myfolder/data/Tagseq_peaks/peaks.polya.2h.default.gff.features.gff',header=F,comment.char='#'),
 	tp68=read.delim('/g/furlong/Harnett/TSS_CAGE_myfolder/data/Tagseq_peaks/peaks.polya.6h.default.gff.features.gff',header=F,comment.char='#'),

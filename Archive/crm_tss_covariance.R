@@ -1,7 +1,7 @@
 setwd ( '/g/furlong/Harnett/TSS_CAGE_myfolder/' )
 source ( 'src/tss_cage_functions.R' )
 load ( file.cage.tag.rles.plnorm )
-load ( 'data/objects/crmgrs.object.R' )
+load ( 'data/objects/crm8008.gr.object.R' )
 load ( 'data/objects/tssgr.R' )
 load ( 'data/objects/cad3.gr.object.R' )
 
@@ -33,11 +33,11 @@ vector.pvals.shuffle <-function ( a,b,iter=1000 ){
 #make list of grs
 active.tss.gr<-tss.gr[  tss.gr$active68 ]
 active.tss.gr<- active.tss.gr[  seqnames ( active.tss.gr )%in%bigchrs ]
-gr=combinegrs ( list ( cad3=cad3.gr,crm=crmgrs,tss=active.tss.gr ) )
+gr=combinegrs ( list ( cad3=cad3.gr,crm=crm8008.gr,tss=active.tss.gr ) )
 gr=sort ( gr )
 
 #get the matrix with info for each line on each of our grs
-gr$cagemat=get.best.window.mat ( reg=nomcols ( gr ),w=window.size,chrs.keep,bigchrs,cage=cg[ accs ] )
+gr$cagemat=getBestWindowMat ( reg=nomcols ( gr ),w=window.size,chrs.keep,bigchrs,cage=cg[ accs ] )
 
 
 #we should exclude anything below our cutoff

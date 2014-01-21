@@ -33,46 +33,46 @@ export(cad3.neg,con='analysis/make_regions_bedfiles/cad3.neg.bed')
 
 # Now 8008 CRMs -----------------------------------------------------------
 
-#crmgrs<-crmgrs[ countOverlaps(crmgrs,cad3.gr)==0 ]#get rid of ones overlapping hte CAD3 enhancers
+#crm8008.gr<-crm8008.gr[ countOverlaps(crm8008.gr,cad3.gr)==0 ]#get rid of ones overlapping hte CAD3 enhancers
 #get rid of the intergenic ones
-crmgrs$intergenic<-distanceToNearest(crmgrs,transcripts.gr)$distance>intergenic_dist
+crm8008.gr$intergenic<-distanceToNearest(crm8008.gr,transcripts.gr)$distance>intergenic_dist
 #And add the K4me3 info from our chromatin and the modencode projects'
 modK4me3<-chrompeaks.modencode[['K4me3_4-8h']]
 modK4me3<- modK4me3#accept even low confidence peaks
 #mark those with any H3K4me3 overlap
-crmgrs$H3K4me3_peak<- 0< (countOverlaps(crmgrs,modK4me3)+ countOverlaps(crmgrs,chrompeaks[['K4me3_6-8h']]))
+crm8008.gr$H3K4me3_peak<- 0< (countOverlaps(crm8008.gr,modK4me3)+ countOverlaps(crm8008.gr,chrompeaks[['K4me3_6-8h']]))
 #And add the K4me1 info from our chromatin and the modencode projects'
 modK4me1<-chrompeaks.modencode[['K4me1_4-8h']]
 # modK4me1<- modK4me1 #accept even low confidence peaks
 modK4me1<- keepSeqlevels(modK4me1,chrs.keep)#
 #mark those with H3K4me1 overlaps
-crmgrs$H3K4me1_peak<- 0< (countOverlaps(crmgrs,modK4me1)+  countOverlaps(crmgrs,chrompeaks[['K4me1_6-8h']]))
+crm8008.gr$H3K4me1_peak<- 0< (countOverlaps(crm8008.gr,modK4me1)+  countOverlaps(crm8008.gr,chrompeaks[['K4me1_6-8h']]))
 
 #And add the K27ac info from our chromatin and the modencode projects'
 modK27ac<-chrompeaks.modencode[['K27ac_4-8h']]
 modK27ac<- modK27ac#accept even low confidence peaks
 #mark those with H3K4me1 overlaps
-crmgrs$H3K27ac<- 0< (countOverlaps(crmgrs,modK27ac)+  countOverlaps(crmgrs,chrompeaks[['K27Ac_6-8h']]))
+crm8008.gr$H3K27ac<- 0< (countOverlaps(crm8008.gr,modK27ac)+  countOverlaps(crm8008.gr,chrompeaks[['K27Ac_6-8h']]))
 #and our PolII
-crmgrs$polII<-   0 < countOverlaps(crmgrs,chrompeaks[['PolII_6-8h']])
+crm8008.gr$polII<-   0 < countOverlaps(crm8008.gr,chrompeaks[['PolII_6-8h']])
 
-crmgrs$chrom.neg.set<-crmgrs$H3K4me1_peak & !crmgrs$H3K27ac & !crmgrs$H3K4me3_peak& crmgrs$intergenic & ! crmgrs$polII
+crm8008.gr$chrom.neg.set<-crm8008.gr$H3K4me1_peak & !crm8008.gr$H3K27ac & !crm8008.gr$H3K4me3_peak& crm8008.gr$intergenic & ! crm8008.gr$polII
 
 
 #now construct an even more negative set by taking the bottom of the H3K27ac
 
-sum.K27ac<-unlist(viewSums(Views(chrom.rles.rpgc.sub.merge[['H3K27ac_6.8']],as(crmgrs,'RangesList'))))
-sum.K27.modencode<-unlist(viewSums(Views(chrom.rles.modencode[['H3K27ac']],as(crmgrs,'RangesList'))))
+sum.K27ac<-unlist(viewSums(Views(chrom.rles.rpgc.sub.merge[['H3K27ac_6.8']],as(crm8008.gr,'RangesList'))))
+sum.K27.modencode<-unlist(viewSums(Views(chrom.rles.modencode[['H3K27ac']],as(crm8008.gr,'RangesList'))))
 
 #all 8008
-qplot(sum.K27ac,sum.K27.modencode,color=crmgrs$chrom.neg.set,shape=crmgrs$chrom.neg.set,xlab='Mesodermal K27ac',ylab='whole embryo ac',
+qplot(sum.K27ac,sum.K27.modencode,color=crm8008.gr$chrom.neg.set,shape=crm8008.gr$chrom.neg.set,xlab='Mesodermal K27ac',ylab='whole embryo ac',
       main='Comparison or our mesodermal K27ac data with\nModencode data - 6.8hrs, all 8008 crms')
 
-neg.crms<-crmgrs[crmgrs$chrom.neg.set,]
-neg.crms$islowk27<-sum.K27.modencode[crmgrs$chrom.neg.set]<quantile(sum.K27ac[crmgrs$chrom.neg.set],0.2)
+neg.crms<-crm8008.gr[crm8008.gr$chrom.neg.set,]
+neg.crms$islowk27<-sum.K27.modencode[crm8008.gr$chrom.neg.set]<quantile(sum.K27ac[crm8008.gr$chrom.neg.set],0.2)
 
 #just negatives
-qplot(sum.K27ac[crmgrs$chrom.neg.set],sum.K27.modencode[ crmgrs$chrom.neg.set],color=neg.crms$islowk27,xlab='Mesodermal K27ac',ylab='whole embryo ac',
+qplot(sum.K27ac[crm8008.gr$chrom.neg.set],sum.K27.modencode[ crm8008.gr$chrom.neg.set],color=neg.crms$islowk27,xlab='Mesodermal K27ac',ylab='whole embryo ac',
       main='Comparison or our mesodermal K27ac data with\nModencode data - 6.8hrs, all negative 8008 crms')
 
 #put the lowk27 status in as the score so we can export to a bed
@@ -87,24 +87,24 @@ neg.crms$score<-as.numeric(neg.crms$islowk27)
 modK4me3<-chrompeaks.modencode[['K4me3_4-8h']]
 modK4me3<- modK4me3#accept even low confidence peaks
 #mark those with any H3K4me3 overlap
-crmgrs$H3K4me3_peak<- 0< (countOverlaps(crmgrs,modK4me3)+ countOverlaps(crmgrs,chrompeaks[['K4me3_6-8h']]))
+crm8008.gr$H3K4me3_peak<- 0< (countOverlaps(crm8008.gr,modK4me3)+ countOverlaps(crm8008.gr,chrompeaks[['K4me3_6-8h']]))
 
 #And add the K4me1 info from our chromatin and the modencode projects'
 modK4me1<-chrompeaks.modencode[['K4me1_4-8h']]
 modK4me1<- modK4me3#accept even low confidence peaks
 #mark those with H3K4me1 overlaps
-crmgrs$H3K4me1_peak<- 0< (countOverlaps(crmgrs,modK4me1)+  countOverlaps(crmgrs,chrompeaks[['K4me1_6-8h']]))
+crm8008.gr$H3K4me1_peak<- 0< (countOverlaps(crm8008.gr,modK4me1)+  countOverlaps(crm8008.gr,chrompeaks[['K4me1_6-8h']]))
 
 #And add the K27ac info from our chromatin and the modencode projects'
 modK27ac<-chrompeaks.modencode[['K27ac_4-8h']]
 modK27ac<- modK27ac#accept even low confidence peaks
 
 #mark those with H3K4me1 overlaps
-crmgrs$H3K27ac<- 0< (countOverlaps(crmgrs,modK27ac)+  countOverlaps(crmgrs,chrompeaks[['K27Ac_6-8h']]))
+crm8008.gr$H3K27ac<- 0< (countOverlaps(crm8008.gr,modK27ac)+  countOverlaps(crm8008.gr,chrompeaks[['K27Ac_6-8h']]))
 
 
 #load sets
-pos.crms<-crmgrs[crmgrs$H3K4me1_peak & crmgrs$H3K27ac & !crmgrs$H3K4me3_peak & crmgrs$intergenic,]
+pos.crms<-crm8008.gr[crm8008.gr$H3K4me1_peak & crm8008.gr$H3K27ac & !crm8008.gr$H3K4me3_peak & crm8008.gr$intergenic,]
 
 pos.crms<-keepSeqlevels(pos.crms,chrs.keep)
 neg.crms<-keepSeqlevels(neg.crms,chrs.keep)
@@ -121,7 +121,7 @@ neg.crms<-neg.crms[-376]
 
 #and our 'inactive' windows, which are the same, only without even K4me1
 act<-list(
-  crmgrs,
+  crm8008.gr,
   cad3.gr,
   transcripts.gr,
   chrompeaks[['K4me3_6-8h']],
@@ -247,11 +247,11 @@ tfgrlist<-sapply(simplify=F,as.character(unique(tffile.df$tp)),function(tp){
 })
 #now let's go through our 6-8 hour set and add the overlap info for the tfs at various timepoints
 
-#for our tf,tp, do countoverlaps four our crmgrs
+#for our tf,tp, do countoverlaps four our crm8008.gr
 tmp<-sapply(simplify=F,as.character(unique(tffile.df$tp)),function(tp){
   sapply(simplify=F,as.character(unique(tffile.df$tfname)),function(tf){
     if(is.null(tfgrlist[[tp]][[tf]])){return(NULL)}   
-    mcols(crmgrs)[[paste(tf,tp,sep='_')]]<<-countOverlaps(crmgrs,tfgrlist[[tp]][[tf]])>0 
+    mcols(crm8008.gr)[[paste(tf,tp,sep='_')]]<<-countOverlaps(crm8008.gr,tfgrlist[[tp]][[tf]])>0 
     NULL
   })
 }) 
@@ -260,30 +260,30 @@ tmp<-sapply(simplify=F,as.character(unique(tffile.df$tp)),function(tp){
 #All heart bound, all 5 mesobound,2 heart and 2 8008
 #we now have columns in our gr matching the ts and tps
 #get logical matrix specifying tfs for heart
-heartmat<-as.matrix(mcols(crmgrs)[,c('tin_6.8','doc2_6.8','dTCF_6.8','mef2_6.8','pnr_6.8')])
-mesomat<-as.matrix(mcols(crmgrs)[,c('tin_6.8','twi_6.8','bap_6.8','bin_6.8','mef2_6.8')])
+heartmat<-as.matrix(mcols(crm8008.gr)[,c('tin_6.8','doc2_6.8','dTCF_6.8','mef2_6.8','pnr_6.8')])
+mesomat<-as.matrix(mcols(crm8008.gr)[,c('tin_6.8','twi_6.8','bap_6.8','bin_6.8','mef2_6.8')])
 
-mcols(crmgrs)$Activity24   <- (apply(as.matrix(mcols(crmgrs)[,colnames(mcols(crmgrs))[grepl("2.4", colnames(mcols(crmgrs)), fixed=T)]]) , 1, sum))
-mcols(crmgrs)$Activity46   <- (apply(as.matrix(mcols(crmgrs)[,colnames(mcols(crmgrs))[grepl("4.6", colnames(mcols(crmgrs)), fixed=T)]]) , 1, sum))
-mcols(crmgrs)$Activity68   <- (apply(as.matrix(mcols(crmgrs)[,colnames(mcols(crmgrs))[grepl("6.8", colnames(mcols(crmgrs)), fixed=T)]]) , 1, sum))
-mcols(crmgrs)$Activity810   <- (apply(as.matrix(mcols(crmgrs)[,colnames(mcols(crmgrs))[grepl("8.10", colnames(mcols(crmgrs)), fixed=T)]]) , 1, sum))
-mcols(crmgrs)$Activity1012   <- (apply(as.matrix(mcols(crmgrs)[,colnames(mcols(crmgrs))[grepl("10.12", colnames(mcols(crmgrs)), fixed=T)]]) , 1, sum))
+mcols(crm8008.gr)$Activity24   <- (apply(as.matrix(mcols(crm8008.gr)[,colnames(mcols(crm8008.gr))[grepl("2.4", colnames(mcols(crm8008.gr)), fixed=T)]]) , 1, sum))
+mcols(crm8008.gr)$Activity46   <- (apply(as.matrix(mcols(crm8008.gr)[,colnames(mcols(crm8008.gr))[grepl("4.6", colnames(mcols(crm8008.gr)), fixed=T)]]) , 1, sum))
+mcols(crm8008.gr)$Activity68   <- (apply(as.matrix(mcols(crm8008.gr)[,colnames(mcols(crm8008.gr))[grepl("6.8", colnames(mcols(crm8008.gr)), fixed=T)]]) , 1, sum))
+mcols(crm8008.gr)$Activity810   <- (apply(as.matrix(mcols(crm8008.gr)[,colnames(mcols(crm8008.gr))[grepl("8.10", colnames(mcols(crm8008.gr)), fixed=T)]]) , 1, sum))
+mcols(crm8008.gr)$Activity1012   <- (apply(as.matrix(mcols(crm8008.gr)[,colnames(mcols(crm8008.gr))[grepl("10.12", colnames(mcols(crm8008.gr)), fixed=T)]]) , 1, sum))
 
-crmgrs$Meso5<-apply(mesomat,1,all)
-crmgrs$Heart5<-apply(heartmat,1,all)
-crmgrs$Meso2<-apply(mesomat,1,function(x)sum(x)==2)
-crmgrs$Heart2<-apply(heartmat,1,function(x)sum(x)==2)
+crm8008.gr$Meso5<-apply(mesomat,1,all)
+crm8008.gr$Heart5<-apply(heartmat,1,all)
+crm8008.gr$Meso2<-apply(mesomat,1,function(x)sum(x)==2)
+crm8008.gr$Heart2<-apply(heartmat,1,function(x)sum(x)==2)
 
 #Now get the rpgc values for them all
 alltags.rpgc$both<-alltags.rpgc$pos+alltags.rpgc$neg
-crmgrs$allsum.rpgc<-unlist(viewSums(Views(alltags.rpgc$both,as(crmgrs,'RangesList'))))
+crm8008.gr$allsum.rpgc<-unlist(viewSums(Views(alltags.rpgc$both,as(crm8008.gr,'RangesList'))))
 
 #classify our crms using the tf data
 #get the mean normalized rpgc figures for each crm in each class
-tmp<-list(Heart_5TF=crmgrs$allsum.rpgc[ crmgrs$Heart5 & crmgrs$intergenic],
-          Meso_5TF=crmgrs$allsum.rpgc[ crmgrs$Meso5 & crmgrs$intergenic],
-          Heart_2TF=crmgrs$allsum.rpgc[ crmgrs$Meso2 & crmgrs$intergenic],
-          Meso_2TF=crmgrs$allsum.rpgc[ crmgrs$Heart2 & crmgrs$intergenic])
+tmp<-list(Heart_5TF=crm8008.gr$allsum.rpgc[ crm8008.gr$Heart5 & crm8008.gr$intergenic],
+          Meso_5TF=crm8008.gr$allsum.rpgc[ crm8008.gr$Meso5 & crm8008.gr$intergenic],
+          Heart_2TF=crm8008.gr$allsum.rpgc[ crm8008.gr$Meso2 & crm8008.gr$intergenic],
+          Meso_2TF=crm8008.gr$allsum.rpgc[ crm8008.gr$Heart2 & crm8008.gr$intergenic])
 tmp<-stack(tmp)
 #do boxplot
 jpeg('analysis/make_regions_bedfiles/Heart_Meso_5bound_2bound_TF_boxplot.jpeg')
@@ -292,17 +292,17 @@ dev.off()
 #show sizes of sets
 table(tmp$ind)
 
-crmgrs$in.tf.pos<- !crmgrs$H3K4me3_peak & crmgrs$intergenic & crmgrs$Activity68
-crmgrs$in.tf.neg<- !crmgrs$H3K4me3_peak & crmgrs$intergenic & !crmgrs$Activity68 & !crmgrs$Activity46
+crm8008.gr$in.tf.pos<- !crm8008.gr$H3K4me3_peak & crm8008.gr$intergenic & crm8008.gr$Activity68
+crm8008.gr$in.tf.neg<- !crm8008.gr$H3K4me3_peak & crm8008.gr$intergenic & !crm8008.gr$Activity68 & !crm8008.gr$Activity46
 
-pos.tf.crms<-crmgrs[ crmgrs$in.tf.pos]
-neg.tf.crms<-crmgrs[ crmgrs$in.tf.neg]
+pos.tf.crms<-crm8008.gr[ crm8008.gr$in.tf.pos]
+neg.tf.crms<-crm8008.gr[ crm8008.gr$in.tf.neg]
 
 export(pos.tf.crms,con ='analysis/make_regions_bedfiles/pos.tf.8008crms.bed')
 export(pos.tf.crms,con='analysis/make_regions_bedfiles/neg.tf.8008crms.bed')
 
-pos.tf.ac.crms<-crmgrs[ crmgrs$in.tf.pos & crmgrs$H3K27ac]
-neg.tf.ac.crms<-crmgrs[  crmgrs$in.tf.neg & !crmgrs$H3K27ac]
+pos.tf.ac.crms<-crm8008.gr[ crm8008.gr$in.tf.pos & crm8008.gr$H3K27ac]
+neg.tf.ac.crms<-crm8008.gr[  crm8008.gr$in.tf.neg & !crm8008.gr$H3K27ac]
 
 export(pos.tf.ac.crms,con ='analysis/make_regions_bedfiles/pos.tf.ac.8008crms.bed')
 export(pos.tf.ac.crms,con='analysis/make_regions_bedfiles/neg.tf.ac.8008crms.bed')
@@ -310,40 +310,40 @@ export(pos.tf.ac.crms,con='analysis/make_regions_bedfiles/neg.tf.ac.8008crms.bed
 
 # Now use DNase as well. --------------------------------------------------
 #get the summed dnase reads over 6-8hrs for our crms
-crm.dnase.68<-Views(dnase.rles$STG10+dnase.rles$STG11,as(crmgrs,'RangesList'))
-crm.dnase.68<-unlist(viewSums(crm.dnase.68))/width(crmgrs)
+crm.dnase.68<-Views(dnase.rles$STG10+dnase.rles$STG11,as(crm8008.gr,'RangesList'))
+crm.dnase.68<-unlist(viewSums(crm.dnase.68))/width(crm8008.gr)
 
 #does dnase sensitivity correlate with cage signal?
 #scatter plot, coloring positives, negatives
 #scatterplot showing dnase vs cage for intergenic and non
-qplot(x=crmgrs$allsum.rpgc,y=crm.dnase.68,log='xy',xlab='RPGC cage signal',ylab='Mean DNase Sensitivity',
-      color= crmgrs$intergenic ,main='Dnase Sensitivity vs Cage signal for 8008 crms' )+
+qplot(x=crm8008.gr$allsum.rpgc,y=crm.dnase.68,log='xy',xlab='RPGC cage signal',ylab='Mean DNase Sensitivity',
+      color= crm8008.gr$intergenic ,main='Dnase Sensitivity vs Cage signal for 8008 crms' )+
   scale_color_discrete(name='Intergenic')
 
-setvector=rep('Neither',length(crmgrs))
-setvector[ crmgrs$in.tf.pos ]<-'Positive'
-setvector[ crmgrs$in.tf.neg ]<-'Negative'
-int<-crmgrs$intergenic
+setvector=rep('Neither',length(crm8008.gr))
+setvector[ crm8008.gr$in.tf.pos ]<-'Positive'
+setvector[ crm8008.gr$in.tf.neg ]<-'Negative'
+int<-crm8008.gr$intergenic
 
 #scatterplot showing this for our positive negative tf set
-qplot(x=crmgrs$allsum.rpgc[int],y=crm.dnase.68[int],log='xy',xlab='RPGC cage signal',ylab='Mean DNase Sensitivity',
+qplot(x=crm8008.gr$allsum.rpgc[int],y=crm.dnase.68[int],log='xy',xlab='RPGC cage signal',ylab='Mean DNase Sensitivity',
       color= setvector[int] ,main='Dnase Sensitivity vs Cage signal for Intergenic 8008 crms' )+
   scale_color_discrete(name='Set - TF binding')
 
 
-qplot(x=crmgrs$allsum.rpgc[int],color=setvector[int],geom='density',log='x',xlab='Total Normalized Cage Signal',
+qplot(x=crm8008.gr$allsum.rpgc[int],color=setvector[int],geom='density',log='x',xlab='Total Normalized Cage Signal',
       main='Distribution of Cage Signal for Sets')+    scale_color_discrete(name='Set - TF binding')
 
-setvector=rep('Neither',length(crmgrs))
-setvector[ crmgrs$in.tf.pos & crmgrs$H3K27ac ]<-'Positive'
-setvector[ crmgrs$in.tf.neg & ! crmgrs$H3K27ac ]<-'Negative'
+setvector=rep('Neither',length(crm8008.gr))
+setvector[ crm8008.gr$in.tf.pos & crm8008.gr$H3K27ac ]<-'Positive'
+setvector[ crm8008.gr$in.tf.neg & ! crm8008.gr$H3K27ac ]<-'Negative'
 
 #scatterplot showing this for our positive negative tf set
-qplot(x=crmgrs$allsum.rpgc[int],y=crm.dnase.68[int],log='xy',xlab='RPGC cage signal',ylab='Mean DNase Sensitivity',
+qplot(x=crm8008.gr$allsum.rpgc[int],y=crm.dnase.68[int],log='xy',xlab='RPGC cage signal',ylab='Mean DNase Sensitivity',
       color= setvector[int] ,main='Dnase Sensitivity vs Cage signal for Intergenic 8008 crms' )+
   scale_color_discrete(name='Set - TF binding, K27ac')
 
-qplot(x=crmgrs$allsum.rpgc[int],color=setvector[int],geom='density',log='x',xlab='Total Normalized Cage Signal',
+qplot(x=crm8008.gr$allsum.rpgc[int],color=setvector[int],geom='density',log='x',xlab='Total Normalized Cage Signal',
       main='Distribution of Cage Signal for Sets')+scale_color_discrete(name='Set - TF binding + K27ac')
 
 
@@ -351,36 +351,36 @@ qplot(x=crmgrs$allsum.rpgc[int],color=setvector[int],geom='density',log='x',xlab
 
 
 #now define the positives and negatives with dnase as well.
-crmgrs$low.dnase<-crm.dnase.68<quantile(crm.dnase.68,0.2)
-crmgrs$high.dnase<-crm.dnase.68>quantile(crm.dnase.68,0.8)
+crm8008.gr$low.dnase<-crm.dnase.68<quantile(crm.dnase.68,0.2)
+crm8008.gr$high.dnase<-crm.dnase.68>quantile(crm.dnase.68,0.8)
 
-setvector=rep('Neither',length(crmgrs))
-setvector[ crmgrs$in.tf.pos & crmgrs$high.dnase ]<-'Positive'
-setvector[ crmgrs$in.tf.neg & crmgrs$low.dnase ]<-'Negative'
-int<-crmgrs$intergenic
+setvector=rep('Neither',length(crm8008.gr))
+setvector[ crm8008.gr$in.tf.pos & crm8008.gr$high.dnase ]<-'Positive'
+setvector[ crm8008.gr$in.tf.neg & crm8008.gr$low.dnase ]<-'Negative'
+int<-crm8008.gr$intergenic
 
 #scatterplot showing this for our positive negative tf set, with dnase
-qplot(x=crmgrs$allsum.rpgc[int],y=crm.dnase.68[int],log='xy',xlab='RPGC cage signal',ylab='Mean DNase Sensitivity',
+qplot(x=crm8008.gr$allsum.rpgc[int],y=crm.dnase.68[int],log='xy',xlab='RPGC cage signal',ylab='Mean DNase Sensitivity',
       color= setvector[int] ,main='Dnase Sensitivity vs Cage signal for Intergenic 8008 crms' )+
   scale_color_discrete(name='Set - TF binding + Dnase')
 
-qplot(x=crmgrs$allsum.rpgc[int],color=setvector[int],geom='density',log='x',xlab='Total Normalized Cage Signal',
+qplot(x=crm8008.gr$allsum.rpgc[int],color=setvector[int],geom='density',log='x',xlab='Total Normalized Cage Signal',
       main='Distribution of Cage Signal for Sets')+  scale_color_discrete(name='Set - TF binding + Dnase')
 
 
 ##And finally do it with K27ac as well
-setvector=rep('Neither',length(crmgrs))
-setvector[ crmgrs$in.tf.pos & crmgrs$high.dnase & crmgrs$H3K27ac ]<-'Positive'
-setvector[ crmgrs$in.tf.neg & crmgrs$low.dnase & !crmgrs$H3K27ac ]<-'Negative'
-int<-crmgrs$intergenic
+setvector=rep('Neither',length(crm8008.gr))
+setvector[ crm8008.gr$in.tf.pos & crm8008.gr$high.dnase & crm8008.gr$H3K27ac ]<-'Positive'
+setvector[ crm8008.gr$in.tf.neg & crm8008.gr$low.dnase & !crm8008.gr$H3K27ac ]<-'Negative'
+int<-crm8008.gr$intergenic
 
 
 #scatterplot showing this for our positive negative tf set
-qplot(x=crmgrs$allsum.rpgc[int],y=crm.dnase.68[int],log='xy',xlab='RPGC cage signal',ylab='Mean DNase Sensitivity',
+qplot(x=crm8008.gr$allsum.rpgc[int],y=crm.dnase.68[int],log='xy',xlab='RPGC cage signal',ylab='Mean DNase Sensitivity',
       color= setvector[int] ,main='Dnase Sensitivity vs Cage signal for Intergenic 8008 crms' )+
   scale_color_discrete(name='Set - TF binding + Dnase + K27ac')
 
-qplot(x=crmgrs$allsum.rpgc[int],color=setvector[int],geom='density',log='x',xlab='Total Normalized Cage Signal',
+qplot(x=crm8008.gr$allsum.rpgc[int],color=setvector[int],geom='density',log='x',xlab='Total Normalized Cage Signal',
       main='Distribution of Cage Signal for Sets')+scale_color_discrete(name='Set - TF binding + Dnase + K27ac')
 
 
@@ -389,20 +389,20 @@ qplot(x=crmgrs$allsum.rpgc[int],color=setvector[int],geom='density',log='x',xlab
 #We can do an additional filter by filtering these again using the previous stages dnase
 
 
-pos.tf.dnase.crms<-crmgrs[ crmgrs$in.tf.pos & crmgrs$high.dnase]
-neg.tf.dnase.crms<-crmgrs[ crmgrs$in.tf.neg & crmgrs$low.dnase]
+pos.tf.dnase.crms<-crm8008.gr[ crm8008.gr$in.tf.pos & crm8008.gr$high.dnase]
+neg.tf.dnase.crms<-crm8008.gr[ crm8008.gr$in.tf.neg & crm8008.gr$low.dnase]
 
 export(pos.tf.dnase.crms,con ='analysis/make_regions_bedfiles/pos.tf.8008crms.bed')
 export(pos.tf.dnase.crms,con='analysis/make_regions_bedfiles/neg.tf.8008crms.bed')
 
-pos.tf.ac.dnase.crms<-crmgrs[ crmgrs$in.tf.pos & crmgrs$H3K27ac & crmgrs$high.dnase ]
-neg.tf.ac.dnase.crms<-crmgrs[  crmgrs$in.tf.neg & !crmgrs$H3K27ac & crmgrs$low.dnase ]
+pos.tf.ac.dnase.crms<-crm8008.gr[ crm8008.gr$in.tf.pos & crm8008.gr$H3K27ac & crm8008.gr$high.dnase ]
+neg.tf.ac.dnase.crms<-crm8008.gr[  crm8008.gr$in.tf.neg & !crm8008.gr$H3K27ac & crm8008.gr$low.dnase ]
 
 export(pos.tf.ac.crms,con ='analysis/make_regions_bedfiles/pos.tf.ac.8008crms.bed')
 export(pos.tf.ac.crms,con='analysis/make_regions_bedfiles/neg.tf.ac.8008crms.bed')
 
 
-save(crmgrs,file=file.crmgrs)
+save(crm8008.gr,file=file.crm8008.gr)
 
 
 # Some summary graphs of the positive and negative sets -------------------
@@ -410,8 +410,8 @@ save(crmgrs,file=file.crmgrs)
 
 
 accs<-as.character(accession.df$accession[ !accession.df$reseq])
-cagemat<-get.cage.matrix(crmgrs,sapply(cage.tag.rles[accs][],'[[','both'))
-rownames(cagemat)<-crmgrs$id
+cagemat<-get.cage.matrix(crm8008.gr,sapply(cage.tag.rles[accs][],'[[','both'))
+rownames(cagemat)<-crm8008.gr$id
 tmp<-melt(cagemat)
 tmp$Var2 <-factor(tmp$Var2, levels = as.character(unique(tmp$Var2)))
 tmp$Var1 <-factor(tmp$Var1, levels = as.character(unique(tmp$Var1)))
@@ -422,8 +422,8 @@ plot1<-ggplot(tmp,aes(x=as.factor(tmp$Var2),y=tmp$value))+stat_summary(fun.data=
 plot1
 
 #for normalized libraries
-cagemat<-get.cage.matrix(crmgrs,sapply(cage.tag.rles.rpgc[accs][],'[[','both'))
-rownames(cagemat)<-crmgrs$id
+cagemat<-get.cage.matrix(crm8008.gr,sapply(cage.tag.rles.rpgc[accs][],'[[','both'))
+rownames(cagemat)<-crm8008.gr$id
 tmp<-melt(cagemat)
 tmp$Var2 <-factor(tmp$Var2, levels = as.character(unique(tmp$Var2)))
 tmp$Var1 <-factor(tmp$Var1, levels = as.character(unique(tmp$Var1)))
@@ -454,12 +454,12 @@ plot1<-ggplot(tmp,aes(x=as.character(tmp$Var2),y=tmp$value))+stat_summary(fun.da
 
 
 #Now for crms instead of libraries
-setvector=rep('Neither',length(crmgrs))
-setvector[ crmgrs$in.tf.pos & crmgrs$high.dnase & crmgrs$H3K27ac ]<-'Positive'
-setvector[ crmgrs$in.tf.neg & crmgrs$low.dnase & !crmgrs$H3K27ac ]<-'Negative'
+setvector=rep('Neither',length(crm8008.gr))
+setvector[ crm8008.gr$in.tf.pos & crm8008.gr$high.dnase & crm8008.gr$H3K27ac ]<-'Positive'
+setvector[ crm8008.gr$in.tf.neg & crm8008.gr$low.dnase & !crm8008.gr$H3K27ac ]<-'Negative'
 
-cagemat<-get.cage.matrix(crmgrs,sapply(cage.tag.rles.rpgc[accs][],'[[','both'))
-rownames(cagemat)<-1:length(crmgrs)
+cagemat<-get.cage.matrix(crm8008.gr,sapply(cage.tag.rles.rpgc[accs][],'[[','both'))
+rownames(cagemat)<-1:length(crm8008.gr)
 tmp<-melt(cagemat)
 tmp$set<-setvector[as.numeric(as.character(tmp$Var1))]
 

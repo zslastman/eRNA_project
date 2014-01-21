@@ -12,7 +12,7 @@ plot(libsizes)
 cm<-t(apply(cm,1,function(v){v*libsizes}))
 
 regnum<-nrow(cm)
-get.best.window.mat(reg=gr[10000:11000,],w=100,chrs.keep,bigchrs,cage=cage.tag.rles)
+getBestWindowMat(reg=gr[10000:11000,],w=100,chrs.keep,bigchrs,cage=cage.tag.rles)
 cm<-gr$cagemat[10000:11000,]
 #now we get the geometric mean of each row
 gmean<-function(x){exp(mean(log(x)))}

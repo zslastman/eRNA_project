@@ -35,7 +35,7 @@ prec.cutoff<-0.95
 
 #define 'inactive space'
 act<-list(
-  crmgrs,
+  crm8008.gr,
   cad3.gr,
   transcripts.gr,
   chrompeaks[['K4me3_6-8h']],
@@ -186,44 +186,44 @@ export(cad3.neg,con='analysis/make_regions_bedfiles/cad3.neg.bed')
 #also including lincRNAs
 trancripts.lincs.gr<-do.call('c',sapply(list(lincRNA.gr,transcripts.gr),  function(gr){ mcols(gr) <-NULL;gr}))
 #concatenate our transcripts and lincRNAs.
-crmgrs$intergenic<-distanceToNearest(crmgrs,trancripts.lincs.gr)$distance>intergenic_dist
+crm8008.gr$intergenic<-distanceToNearest(crm8008.gr,trancripts.lincs.gr)$distance>intergenic_dist
 
 ##And add the binary information from peaks
 #mark those with any H3K4me3 overlap
-crmgrs$H3K4me3_peak<- 0 < 
-  (countOverlaps(crmgrs,chrompeaks.modencode[['K4me3_4-8h']])+ 
-     countOverlaps(crmgrs,chrompeaks[['K4me3_6-8h']]))+countOverlaps(crmgrs,chrompeaks[['K4me3_4-6h']])
+crm8008.gr$H3K4me3_peak<- 0 < 
+  (countOverlaps(crm8008.gr,chrompeaks.modencode[['K4me3_4-8h']])+ 
+     countOverlaps(crm8008.gr,chrompeaks[['K4me3_6-8h']]))+countOverlaps(crm8008.gr,chrompeaks[['K4me3_4-6h']])
 #mark those with H3K4me1 overlaps
-crmgrs$H3K4me1_peak<- 0 < 
-  (countOverlaps(crmgrs,chrompeaks.modencode[['K4me1_4-8h']])+  
-     countOverlaps(crmgrs,chrompeaks[['K4me1_6-8h']]))+countOverlaps(crmgrs,chrompeaks[['K4me1_4-6h']])
+crm8008.gr$H3K4me1_peak<- 0 < 
+  (countOverlaps(crm8008.gr,chrompeaks.modencode[['K4me1_4-8h']])+  
+     countOverlaps(crm8008.gr,chrompeaks[['K4me1_6-8h']]))+countOverlaps(crm8008.gr,chrompeaks[['K4me1_4-6h']])
 #And add the K27ac info from our chromatin and the modencode projects'
-crmgrs$H3K27ac<- 0 < 
-  (countOverlaps(crmgrs,chrompeaks.modencode[['K27ac_4-8h']])+  
-     countOverlaps(crmgrs,chrompeaks[['K27Ac_6-8h']]))+countOverlaps(crmgrs,chrompeaks[['K27Ac_4-6h']])
+crm8008.gr$H3K27ac<- 0 < 
+  (countOverlaps(crm8008.gr,chrompeaks.modencode[['K27ac_4-8h']])+  
+     countOverlaps(crm8008.gr,chrompeaks[['K27Ac_6-8h']]))+countOverlaps(crm8008.gr,chrompeaks[['K27Ac_4-6h']])
 #And add the K36me3 info from our chromatin and the modencode projects'
-crmgrs$H3K79me3<- 0 < 
-#  (countOverlaps(crmgrs,chrompeaks.modencode[['K27ac_4-8h']])+  
-     countOverlaps(crmgrs,chrompeaks[['K79me3_6-8h']])+countOverlaps(crmgrs,chrompeaks[['K79me3_4-6h']])
+crm8008.gr$H3K79me3<- 0 < 
+#  (countOverlaps(crm8008.gr,chrompeaks.modencode[['K27ac_4-8h']])+  
+     countOverlaps(crm8008.gr,chrompeaks[['K79me3_6-8h']])+countOverlaps(crm8008.gr,chrompeaks[['K79me3_4-6h']])
 #And add the K79ac info from our chromatin and the modencode projects'
-crmgrs$H3K36me3<- 0 < 
-     countOverlaps(crmgrs,chrompeaks[['K36me3_6-8h']])+countOverlaps(crmgrs,chrompeaks[['K36me3_4-6h']])
+crm8008.gr$H3K36me3<- 0 < 
+     countOverlaps(crm8008.gr,chrompeaks[['K36me3_6-8h']])+countOverlaps(crm8008.gr,chrompeaks[['K36me3_4-6h']])
 #and our PolII
-crmgrs$polII <-   0 < countOverlaps(crmgrs,chrompeaks[['PolII_6-8h']]) +countOverlaps(crmgrs,chrompeaks[['PolII_4-6h']])
+crm8008.gr$polII <-   0 < countOverlaps(crm8008.gr,chrompeaks[['PolII_6-8h']]) +countOverlaps(crm8008.gr,chrompeaks[['PolII_4-6h']])
 
 
 ##And continous information 
-chrom.mean.mats<-sapply(chrom.rles.rpgc.sub.merge,function(chrom.rle){unlist(viewMeans(Views(chrom.rle,as(crmgrs,'RangesList'))))})
-chrom.mean.mats.mod<-sapply(chrom.rles.modencode,function(chrom.rle){unlist(viewMeans(Views(chrom.rle,as(crmgrs,'RangesList'))))})
+chrom.mean.mats<-sapply(chrom.rles.rpgc.sub.merge,function(chrom.rle){unlist(viewMeans(Views(chrom.rle,as(crm8008.gr,'RangesList'))))})
+chrom.mean.mats.mod<-sapply(chrom.rles.modencode,function(chrom.rle){unlist(viewMeans(Views(chrom.rle,as(crm8008.gr,'RangesList'))))})
 
 
-# chrom.mean.mats2<-get.best.chr.window.mat(resize(crmgrs,width=750,fix='center'),w,cage=chrom.rles.rpgc.sub.merge)
+# chrom.mean.mats2<-get.best.chr.window.mat(resize(crm8008.gr,width=750,fix='center'),w,cage=chrom.rles.rpgc.sub.merge)
 # chrom.mean.mats2<-chrom.mean.mats2/w
-# poschrom<- chrom.mean.mats2[crmgrs$abovecut & crmgrs$intergenic,]
-# negchrom<-chrom.mean.mats2[!crmgrs$abovecut & crmgrs$intergenic,]
+# poschrom<- chrom.mean.mats2[crm8008.gr$abovecut & crm8008.gr$intergenic,]
+# negchrom<-chrom.mean.mats2[!crm8008.gr$abovecut & crm8008.gr$intergenic,]
 # print(Chrom.boxplots(poschrom , negchrom))
 
-# comparing our datasets to the modencode datasets on the crmgrs ----------
+# comparing our datasets to the modencode datasets on the crm8008.gr ----------
 
 
 cor(chrom.mean.mats[,'PolII_6.8'],chrom.mean.mats.mod[,'PolII'])
@@ -258,11 +258,11 @@ tfgrlist<-sapply(simplify=F,as.character(unique(tffile.df$tp)),function(tp){
 })
 
 #now let's go through our 6-8 hour set and add the overlap info for the tfs at various timepoints
-#for our tf,tp, do countoverlaps four our crmgrs
+#for our tf,tp, do countoverlaps four our crm8008.gr
 tmp<-sapply(simplify=F,as.character(unique(tffile.df$tp)),function(tp){
   sapply(simplify=F,as.character(unique(tffile.df$tfname)),function(tf){
     if(is.null(tfgrlist[[tp]][[tf]])){return(NULL)}   
-    mcols(crmgrs)[[paste(tf,tp,sep='_')]]<<-countOverlaps(crmgrs,tfgrlist[[tp]][[tf]])>0 
+    mcols(crm8008.gr)[[paste(tf,tp,sep='_')]]<<-countOverlaps(crm8008.gr,tfgrlist[[tp]][[tf]])>0 
     NULL
   })
 }) 
@@ -271,29 +271,29 @@ tmp<-sapply(simplify=F,as.character(unique(tffile.df$tp)),function(tp){
 #All heart bound, all 5 mesobound,2 heart and 2 8008
 #we now have columns in our gr matching the ts and tps
 #get logical matrix specifying tfs for heart
-heartmat<-as.matrix(mcols(crmgrs)[,c('tin_6.8','doc2_6.8','dTCF_6.8','mef2_6.8','pnr_6.8')])
-mesomat<-as.matrix(mcols(crmgrs)[,c('tin_6.8','twi_6.8','bap_6.8','bin_6.8','mef2_6.8')])
+heartmat<-as.matrix(mcols(crm8008.gr)[,c('tin_6.8','doc2_6.8','dTCF_6.8','mef2_6.8','pnr_6.8')])
+mesomat<-as.matrix(mcols(crm8008.gr)[,c('tin_6.8','twi_6.8','bap_6.8','bin_6.8','mef2_6.8')])
 
-mcols(crmgrs)$Activity24   <- (apply(as.matrix(mcols(crmgrs)[,colnames(mcols(crmgrs))[grepl("2.4", colnames(mcols(crmgrs)), fixed=T)]]) , 1, sum))
-mcols(crmgrs)$Activity46   <- (apply(as.matrix(mcols(crmgrs)[,colnames(mcols(crmgrs))[grepl("4.6", colnames(mcols(crmgrs)), fixed=T)]]) , 1, sum))
-mcols(crmgrs)$Activity68   <- (apply(as.matrix(mcols(crmgrs)[,colnames(mcols(crmgrs))[grepl("6.8", colnames(mcols(crmgrs)), fixed=T)]]) , 1, sum))
-mcols(crmgrs)$Activity810   <- (apply(as.matrix(mcols(crmgrs)[,colnames(mcols(crmgrs))[grepl("8.10", colnames(mcols(crmgrs)), fixed=T)]]) , 1, sum))
-mcols(crmgrs)$Activity1012   <- (apply(as.matrix(mcols(crmgrs)[,colnames(mcols(crmgrs))[grepl("10.12", colnames(mcols(crmgrs)), fixed=T)]]) , 1, sum))
+mcols(crm8008.gr)$Activity24   <- (apply(as.matrix(mcols(crm8008.gr)[,colnames(mcols(crm8008.gr))[grepl("2.4", colnames(mcols(crm8008.gr)), fixed=T)]]) , 1, sum))
+mcols(crm8008.gr)$Activity46   <- (apply(as.matrix(mcols(crm8008.gr)[,colnames(mcols(crm8008.gr))[grepl("4.6", colnames(mcols(crm8008.gr)), fixed=T)]]) , 1, sum))
+mcols(crm8008.gr)$Activity68   <- (apply(as.matrix(mcols(crm8008.gr)[,colnames(mcols(crm8008.gr))[grepl("6.8", colnames(mcols(crm8008.gr)), fixed=T)]]) , 1, sum))
+mcols(crm8008.gr)$Activity810   <- (apply(as.matrix(mcols(crm8008.gr)[,colnames(mcols(crm8008.gr))[grepl("8.10", colnames(mcols(crm8008.gr)), fixed=T)]]) , 1, sum))
+mcols(crm8008.gr)$Activity1012   <- (apply(as.matrix(mcols(crm8008.gr)[,colnames(mcols(crm8008.gr))[grepl("10.12", colnames(mcols(crm8008.gr)), fixed=T)]]) , 1, sum))
 
-crmgrs$Meso5<-apply(mesomat,1,all)
-crmgrs$Heart5<-apply(heartmat,1,all)
-crmgrs$Meso2<-apply(mesomat,1,function(x)sum(x)==2)
-crmgrs$Heart2<-apply(heartmat,1,function(x)sum(x)==2)
+crm8008.gr$Meso5<-apply(mesomat,1,all)
+crm8008.gr$Heart5<-apply(heartmat,1,all)
+crm8008.gr$Meso2<-apply(mesomat,1,function(x)sum(x)==2)
+crm8008.gr$Heart2<-apply(heartmat,1,function(x)sum(x)==2)
 
 #Now get the rpgc values for them all
 alltags.rpgc$both<-alltags.rpgc$pos+alltags.rpgc$neg
-crmgrs$allsum.rpgc<-unlist(viewSums(Views(alltags.rpgc$both,as(crmgrs,'RangesList'))))
+crm8008.gr$allsum.rpgc<-unlist(viewSums(Views(alltags.rpgc$both,as(crm8008.gr,'RangesList'))))
 
-crmgrs$in.tf.pos <- !crmgrs$H3K4me3_peak & crmgrs$intergenic & crmgrs$Activity68
-crmgrs$in.tf.neg<- !crmgrs$H3K4me3_peak & crmgrs$intergenic & !crmgrs$Activity68 & !crmgrs$Activity46
+crm8008.gr$in.tf.pos <- !crm8008.gr$H3K4me3_peak & crm8008.gr$intergenic & crm8008.gr$Activity68
+crm8008.gr$in.tf.neg<- !crm8008.gr$H3K4me3_peak & crm8008.gr$intergenic & !crm8008.gr$Activity68 & !crm8008.gr$Activity46
 
-export(crmgrs[ crmgrs$in.tf.pos],con ='analysis/make_regions_bedfiles/pos.tf.8008crms.bed')
-export(crmgrs[ crmgrs$in.tf.neg],con='analysis/make_regions_bedfiles/neg.tf.8008crms.bed')
+export(crm8008.gr[ crm8008.gr$in.tf.pos],con ='analysis/make_regions_bedfiles/pos.tf.8008crms.bed')
+export(crm8008.gr[ crm8008.gr$in.tf.neg],con='analysis/make_regions_bedfiles/neg.tf.8008crms.bed')
 
 
 
@@ -301,25 +301,25 @@ export(crmgrs[ crmgrs$in.tf.neg],con='analysis/make_regions_bedfiles/neg.tf.8008
 
 
 
-qplot(crmgrs$allsum.rpgc,y={a=chrom.mean.mats.mod[,'PolII'];a[a<1]=1;a},log='xy',color=crmgrs$intergenic,
+qplot(crm8008.gr$allsum.rpgc,y={a=chrom.mean.mats.mod[,'PolII'];a[a<1]=1;a},log='xy',color=crm8008.gr$intergenic,
       xlab='Normalized CAGE tags',ylab='Modencode Whole Embryo PolII 4-8h',main='CAGE signal Vs. Modencode PolII, 8008 CRMs')
-cor(crmgrs$allsum.rpgc,chrom.mean.mats.mod[,'PolII'],method='s')
+cor(crm8008.gr$allsum.rpgc,chrom.mean.mats.mod[,'PolII'],method='s')
 
 
 
-qplot(crmgrs$allsum.rpgc,y={a=chrom.mean.mats.mod[,'PolII'];a[a<1]=1;a},log='xy',color=crmgrs$intergenic,
+qplot(crm8008.gr$allsum.rpgc,y={a=chrom.mean.mats.mod[,'PolII'];a[a<1]=1;a},log='xy',color=crm8008.gr$intergenic,
       xlab='Normalized CAGE tags',ylab='Meso PolII 6_8h ',main='CAGE signal Vs. Modencode PolII, 8008 CRMs')
-cor(crmgrs$allsum.rpgc,chrom.mean.mats[,'PolII_6.8'],method='s')
+cor(crm8008.gr$allsum.rpgc,chrom.mean.mats[,'PolII_6.8'],method='s')
 
 
-qplot(crmgrs$allsum.rpgc[ crmgrs$intergenic],y={a=chrom.mean.mats.mod[,'PolII'][ crmgrs$intergenic];a[a<1]=1;a},log='xy',
+qplot(crm8008.gr$allsum.rpgc[ crm8008.gr$intergenic],y={a=chrom.mean.mats.mod[,'PolII'][ crm8008.gr$intergenic];a[a<1]=1;a},log='xy',
       xlab='Normalized CAGE tags',ylab='Modencode Whole Embryo PolII 4-8h',main='CAGE signal Vs. Modencode PolII, Intergenic 8008 CRMs')
-cor(crmgrs$allsum.rpgc[ crmgrs$intergenic],chrom.mean.mats.mod[,'PolII'][ crmgrs$intergenic],method='s')
+cor(crm8008.gr$allsum.rpgc[ crm8008.gr$intergenic],chrom.mean.mats.mod[,'PolII'][ crm8008.gr$intergenic],method='s')
 
 
-qplot(crmgrs$allsum.rpgc[ crmgrs$intergenic],y={a=chrom.mean.mats.mod[,'PolII'][ crmgrs$intergenic];a[a<1]=1;a},log='xy',
+qplot(crm8008.gr$allsum.rpgc[ crm8008.gr$intergenic],y={a=chrom.mean.mats.mod[,'PolII'][ crm8008.gr$intergenic];a[a<1]=1;a},log='xy',
       xlab='Normalized CAGE tags',ylab='Meso PolII 6_8h ',main='CAGE signal Vs. Modencode PolII, Integergenic 8008 CRMs')
-cor(crmgrs$allsum.rpgc[ crmgrs$intergenic],chrom.mean.mats[,'PolII_6.8'][ crmgrs$intergenic],method='s')
+cor(crm8008.gr$allsum.rpgc[ crm8008.gr$intergenic],chrom.mean.mats[,'PolII_6.8'][ crm8008.gr$intergenic],method='s')
 
 
 
@@ -328,11 +328,11 @@ cor(crmgrs$allsum.rpgc[ crmgrs$intergenic],chrom.mean.mats[,'PolII_6.8'][ crmgrs
 
 # Now  DNase as well. --------------------------------------------------
 #get the summed dnase reads over 6-8hrs for our crms
-crm.dnase.68<-Views(dnase.rles$STG10+dnase.rles$STG11,as(crmgrs,'RangesList'))
-crmgrs$dnase.density.68<-unlist(viewSums(crm.dnase.68))/width(crmgrs)
-crmgrs$low.dnase<-crmgrs$dnase.density.68<quantile(crmgrs$dnase.density.68,0.2)
+crm.dnase.68<-Views(dnase.rles$STG10+dnase.rles$STG11,as(crm8008.gr,'RangesList'))
+crm8008.gr$dnase.density.68<-unlist(viewSums(crm.dnase.68))/width(crm8008.gr)
+crm8008.gr$low.dnase<-crm8008.gr$dnase.density.68<quantile(crm8008.gr$dnase.density.68,0.2)
 
-save(crmgrs,file=file.crmgrs)
+save(crm8008.gr,file=file.crm8008.gr)
 
 
 
@@ -350,8 +350,8 @@ cadpos.nc<-cad3.pos
 mcols(cadpos.nc)<-NULL#and make a version with no mcols
 
 cagecountmatlist<-list(#get the best window of w in each one.
-  crm8008=get.best.window.mat(crmgrs,w,cage=cg),
-  cadpos=get.best.window.mat(cadpos.nc,w,cage=cg)
+  crm8008=getBestWindowMat(crm8008.gr,w,cage=cg),
+  cadpos=getBestWindowMat(cadpos.nc,w,cage=cg)
 )
 
 
@@ -376,20 +376,20 @@ cagecountmatlist.r<-sapply(simplify=F,names(cagecountmatlist),function(reg){
 
 #define our datasets, a list of matrices
 setlist=list(
-  tfset=cagecountmatlist.r[['crm8008']][crmgrs$in.tf.pos,],
-  tf.27ac.set=cagecountmatlist.r[['crm8008']][crmgrs$in.tf.pos & crmgrs$H3K27ac,],
-  tf.pol.set=cagecountmatlist.r[['crm8008']][crmgrs$in.tf.pos & crmgrs$polII,],
-  tf.K79.set=cagecountmatlist.r[['crm8008']][crmgrs$in.tf.pos & crmgrs$H3K79me3,],
- # tf.K36.set=cagecountmatlist.r[['crm8008']][crmgrs$in.tf.pos & crmgrs$H3K36me3,],
-  tf.K4me1.set=cagecountmatlist.r[['crm8008']][crmgrs$in.tf.pos & crmgrs$H3K4me1_peak,],
+  tfset=cagecountmatlist.r[['crm8008']][crm8008.gr$in.tf.pos,],
+  tf.27ac.set=cagecountmatlist.r[['crm8008']][crm8008.gr$in.tf.pos & crm8008.gr$H3K27ac,],
+  tf.pol.set=cagecountmatlist.r[['crm8008']][crm8008.gr$in.tf.pos & crm8008.gr$polII,],
+  tf.K79.set=cagecountmatlist.r[['crm8008']][crm8008.gr$in.tf.pos & crm8008.gr$H3K79me3,],
+ # tf.K36.set=cagecountmatlist.r[['crm8008']][crm8008.gr$in.tf.pos & crm8008.gr$H3K36me3,],
+  tf.K4me1.set=cagecountmatlist.r[['crm8008']][crm8008.gr$in.tf.pos & crm8008.gr$H3K4me1_peak,],
   cad3pos=cagecountmatlist.r[['cadpos']]
 )
 #and the negative dataset we'll compare them to
-crmgrs$in.full.neg <- crmgrs$in.tf.neg & !crmgrs$H3K27ac & crmgrs$low.dnase 
-negmat=cagecountmatlist.r[['crm8008']][ crmgrs$in.full.neg ,]
+crm8008.gr$in.full.neg <- crm8008.gr$in.tf.neg & !crm8008.gr$H3K27ac & crm8008.gr$low.dnase 
+negmat=cagecountmatlist.r[['crm8008']][ crm8008.gr$in.full.neg ,]
 nrow(negmat)
 
-# full.neg.gr<-crmgrs[crmgrs$in.full.neg]
+# full.neg.gr<-crm8008.gr[crm8008.gr$in.full.neg]
 # full.neg.gr$name<-paste0('full.neg.',1:length(full.neg.gr))
 # export(full.neg.gr,'analysis/crm_chrom_analysis/full.neg.bed')
 
@@ -515,10 +515,10 @@ Chrom.boxplots<-function(posmat,negmat, lowlim=F,yname='Mean Inp-Sub Chromatin S
       #scale_y_continuous(name=yname)+
       scale_x_discrete(name=xname,labels=c('Above','Below'))     
 }
-# chrom.mean.mats[crmgrs$abovecut,] ->posmat
-# chrom.mean.mats[!crmgrs$abovecut,]->negmat
-# Chrom.boxplots( chrom.mean.mats[crmgrs$abovecut,] ,chrom.mean.mats[!crmgrs$abovecut,],lowlim=0.000000001)
-# Chrom.boxplots( chrom.mean.mats[crmgrs$abovecut,] ,chrom.mean.mats[!crmgrs$abovecut,],)
+# chrom.mean.mats[crm8008.gr$abovecut,] ->posmat
+# chrom.mean.mats[!crm8008.gr$abovecut,]->negmat
+# Chrom.boxplots( chrom.mean.mats[crm8008.gr$abovecut,] ,chrom.mean.mats[!crm8008.gr$abovecut,],lowlim=0.000000001)
+# Chrom.boxplots( chrom.mean.mats[crm8008.gr$abovecut,] ,chrom.mean.mats[!crm8008.gr$abovecut,],)
 
 #for now we'll just score the matrices by adding up the columns (libraries)
 scorefunc<-rowSums
@@ -554,18 +554,18 @@ for(setn in names(setlist)){
   dev.off()
   
   #now define our above and below cutoff sets.
-  crmgrs$abovecut<-scorefunc(cagecountmatlist.r[['crm8008']])>cutoff
+  crm8008.gr$abovecut<-scorefunc(cagecountmatlist.r[['crm8008']])>cutoff
   
   #and produce the boxplots for the other chromatin marks
   pdf(paste0('analysis/crm_chrom_analysis/crm_chrom_boxplot',setn,'.pdf'))
   
-  poschrom<- chrom.mean.mats[crmgrs$abovecut & crmgrs$intergenic,]
-  negchrom<-chrom.mean.mats[!crmgrs$abovecut & crmgrs$intergenic,]
+  poschrom<- chrom.mean.mats[crm8008.gr$abovecut & crm8008.gr$intergenic,]
+  negchrom<-chrom.mean.mats[!crm8008.gr$abovecut & crm8008.gr$intergenic,]
   print(Chrom.boxplots(poschrom , negchrom))
   
   dev.off()
-  # poschrom<- chrom.mean.mats2[crmgrs$abovecut & crmgrs$intergenic,]
-  # negchrom<-chrom.mean.mats2[!crmgrs$abovecut & crmgrs$intergenic,]
+  # poschrom<- chrom.mean.mats2[crm8008.gr$abovecut & crm8008.gr$intergenic,]
+  # negchrom<-chrom.mean.mats2[!crm8008.gr$abovecut & crm8008.gr$intergenic,]
   # print(Chrom.boxplots(poschrom , negchrom))  
   
   cat(setn)
@@ -576,7 +576,7 @@ for(setn in names(setlist)){
 # exporting tracks for IGBY viewing ---------------------------------------
 
 #gr with our negatives
-full.neg.gr<-crmgrs[crmgrs$in.full.neg]
+full.neg.gr<-crm8008.gr[crm8008.gr$in.full.neg]
 #order them by their cage signal
 neg=scorefunc(negmat)
 full.neg.gr<-full.neg.gr[order(neg,decreasing=T)]
@@ -588,7 +588,7 @@ export(full.neg.gr,'analysis/crm_chrom_analysis/full.neg.bed')
 
 
 #gr with our negatives
-above.cutoff.gr<-crmgrs[ crmgrs$abovecut & crmgrs$intergenic]
+above.cutoff.gr<-crm8008.gr[ crm8008.gr$abovecut & crm8008.gr$intergenic]
 #order them by their cage signal
 above.cutoff.gr<-above.cutoff.gr[order(above.cutoff.gr$allsum.rpgc,decreasing=T)]
 #appropriate names

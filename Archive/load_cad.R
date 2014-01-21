@@ -136,16 +136,16 @@
 #     crm_list$STOP < seqlengths(Dmelanogaster)[as.character(crm_list$CHR)] ,]#or end
 # 
 # #make granges object
-# crmgrs <- GRanges(seqnames=Rle(crm_list$CHR),
+# crm8008.gr <- GRanges(seqnames=Rle(crm_list$CHR),
 #                   IRanges(crm_list$START,crm_list$STOP),
 #                   id=crm_list$CRMID,
 #                   seqinfo=seqinfo(Dmelanogaster))
 # 
 # # Define Intergenic CRMs
-# crm_list$intergenic <- distanceToNearest(crmgrs,transcripts)$distance>intergenic_dist
+# crm_list$intergenic <- distanceToNearest(crm8008.gr,transcripts)$distance>intergenic_dist
 # 
 # #check our crmgr object is the right length
-# stopifnot(nrow(crm_list)==length(crmgrs))
+# stopifnot(nrow(crm_list)==length(crm8008.gr))
 # 
 # mark_rgbs=list(
 #   "Dnase"=col2rgb('orange'),
@@ -181,20 +181,20 @@
 #   crm_list$itemRgb[crm_list[,tf]] <- unlist( lapply(cols,function(color){do.call(rgb,as.list(color))})) 
 # }
 # 
-# crmgrs$name<-paste0(crmgrs$id,'...',crm_list$activitycode)
-# crmgrs$thickStart<- crm_list$middle-24
-# crmgrs$thickEnd<- crm_list$middle+25
-# crmgrs$score<-crm_list$Activity68
-# crmgrs$itemRgb<-crm_list$itemRgb
+# crm8008.gr$name<-paste0(crm8008.gr$id,'...',crm_list$activitycode)
+# crm8008.gr$thickStart<- crm_list$middle-24
+# crm8008.gr$thickEnd<- crm_list$middle+25
+# crm8008.gr$score<-crm_list$Activity68
+# crm8008.gr$itemRgb<-crm_list$itemRgb
 # 
-# f<-'data/crmgrs.color.bed'
+# f<-'data/crm8008.gr.color.bed'
 # write(x='track name="ItemRGBDemo" description="Item RGB demonstration" itemRgb="On"',file=f)
 # 
-# export(crmgrs,con='data/crmgrs.color.bed',format='bed',append=T)
-# readLines('data/crmgrs.color.bed')[1:2]
+# export(crm8008.gr,con='data/crm8008.gr.color.bed',format='bed',append=T)
+# readLines('data/crm8008.gr.color.bed')[1:2]
 # 
 # 
-# seqlevels(crmgrs)<-seqlevels(si)
+# seqlevels(crm8008.gr)<-seqlevels(si)
 # 
 # message('crm data loaded')
 # 

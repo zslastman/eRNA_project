@@ -27,7 +27,7 @@ end(pol_summits)<-start(pol_summits)
 
 
 # polymerase summits from the local maximum -------------------------------
-pol_maxs<-combinegrs(list(tss=tss.gr,crm=crmgrs))
+pol_maxs<-combinegrs(list(tss=tss.gr,crm=crm8008.gr))
 
 find_polmax<-function(gr,polrle,size=500){
   gr<-resize(gr,size,fix='center')
@@ -66,7 +66,7 @@ pol.peak.gr$polsum<-unlist(viewSums(GRViews(chrom.rles.rpgc.sub.merge[['PolII_6.
 
 #annotate overlap with crm or tss
 pol.peak.gr$tss <- 0 < countOverlaps(pol.peak.gr,tss.gr,maxgap=500)
-pol.peak.gr$crm <- 0 < countOverlaps(pol.peak.gr,crmgrs,maxgap=500)
+pol.peak.gr$crm <- 0 < countOverlaps(pol.peak.gr,crm8008.gr,maxgap=500)
 
 pol.peak.gr$name<-paste0('pol_summit',1:length(pol.peak.gr))
 export(pol.peak.gr,'polsummits.tmp.bed')
@@ -193,7 +193,7 @@ heatmap(m.max,Colv=NA,Rowv=NULL,labCol=F,labRow=F,col=rgb((1:100)/100,0,0))
 
 #for just genes
 
-#for just crmgrs
+#for just crm8008.gr
 
 
 gr <- granges()

@@ -7,7 +7,7 @@ cg<-cage.tag.rles
 cgr<-cage.tag.rles.rpgc
 # now create an object with all potential crms ----------------------------
 
-#concatenate the crmgrs and cad3.gr objects
+#concatenate the crm8008.gr and cad3.gr objects
 cad3.pos<-cad3.gr[ cad3.df$active68 %in% T & cad3.df$intergenic ]
 cad3.neg<-cad3.gr[ cad3.df$inactive68 %in% T & cad3.df$intergenic ]
 pos.crms<-keepSeqlevels(cad3.pos,chrs.keep)
@@ -23,7 +23,7 @@ neg.crms<-resize(neg.crms,500,fix='center')
 
 #and our 'inactive' windows, which are the same, only without even K4me1
 act<-list(
-  crmgrs,
+  crm8008.gr,
   cad3.gr,
   transcripts.gr,
   chrompeaks[['K4me3_6-8h']],

@@ -8,7 +8,7 @@ dir.create(outfolder,showWarnings=F)
 # load(paste0(rootfolder,'data/objects/cg.libnorm.object.R'))
 load(paste0(rootfolder,'data/objects/cg.pl.map.object.R'))
 #load RNAseq
-load(paste0(rootfolder,'data/objects/rna.seq.rles.object.R'))
+load(paste0(rootfolder,'data/objects/rna.seq.object.R'))
 #and tagseq
 load('data/objects/all.tagseq.unprocessed.R')
 cg=cg.pl.map
@@ -25,27 +25,26 @@ tss.gr$tsscage = sapply(names(cg),function(acc){
 })
 #and tagseq
 #and load rna data
-tss.gr$tsstagseq = cbind(sappy(tps,function(tp){sapply(names(tagseq.rles),function(acc){
+tss.gr$tsstagseq = cbind(sappy(tps,function(tp){sapply(names(ts),function(acc){
 
 
-		unlist(viewSums(GRViews(tagseq.rles[[acc]]$both,transcripts.gr,width=500,fix='center'))))
+		unlist(viewSums(GRViews(ts[[acc]]$both,transcripts.gr,width=500,fix='center'))))
 	})
 })
 #collapse the 
 #and load rna data
-tss.gr$c.rnaseq = sapply(names(c.rna.rles),function(acc){
-	unlist(viewSums(GRViews(c.rna.rles[[acc]]$pos+c.rna.rles[[acc]]$neg,resize(tss.gr,width=500,fix='center'))))
+tss.gr$c.rnaseq = sapply(names(c.rna.seq),function(acc){
+	unlist(viewSums(GRViews(c.rna.seq[[acc]]$pos+c.rna.seq[[acc]]$neg,resize(tss.gr,width=500,fix='center'))))
 })
-tss.gr$lab.rnaseq = sapply(names(rna.seq.rles),function(acc){
-	unlist(viewSums(GRViews(rna.seq.rles[[acc]],rna.seq.rles[[acc]],resize(tss.gr,width=500,fix='center'))))
+tss.gr$lab.rnaseq = sapply(names(rna.seq),function(acc){
+	unlist(viewSums(GRViews(rna.seq[[acc]],rna.seq[[acc]],resize(tss.gr,width=500,fix='center'))))
 })
 
-save.image('tmp.image.R')
 #normalize?
 library(LSD)
 
 
-unlist(viewSums(GRViews(tagseq.rles[[acc]]$both,sort(resize(resize(transcripts.gr,width=1,fix='end'),width=500,fix='center')))))
+unlist(viewSums(GRViews(ts[[acc]]$both,sort(resize(resize(transcripts.gr,width=1,fix='end'),width=500,fix='center')))))
 
 
 #Correlation plots over the three timepoints
