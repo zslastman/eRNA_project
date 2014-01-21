@@ -9,14 +9,21 @@ dir.create('analysis/gene_variance')
 summaryHDF5 <- '/g/furlong/Harnett/TSS_CAGE_myfolder/data/olliver_processed_summary.hdf5'
 dataHDF5 <- '/g/furlong/project/24_TSSCAGE/analysis/FULLDATA_HDF5/dataWithPC1-5qqnorm_PowerLaw.hdf5'
 lsHDF5 <- h5ls(summaryHDF5,recursive=F)
-lsdataHDF5 <- h5ls(dataHDF5,recursive=F)
+lsdataHDF5 <- h5ls(dataHDF5,recursive=T)
 head(lsHDF5)
+
+var_decomp_tps = paste0('tp',h5read(dataHDF5,name='phenotype/col_header/dev_stage')[1:3])
 
 #now get the variance data as per ollies email
 Venv = h5read(summaryHDF5,name='Venv')
 Vcis = h5read(summaryHDF5,name='Vcis')
 Vtrans = h5read(summaryHDF5,name='Vtrans')
 Vnoise = h5read(summaryHDF5,name='Vnoise')
+Cnoise = h5read(summaryHDF5,name='Cnoise')
+Ccis = h5read(summaryHDF5,name='Ccis')
+Ctrans = h5read(summaryHDF5,name='Ctrans')
+
+
 #Get the various processed variability components (no individual stages here....)
 V = matrix(0,nrow=nrow(Vcis),ncol=5)
 V[,1] = Venv
@@ -37,6 +44,7 @@ Ctrans = h5read(summaryHDF5,name='Ctrans')
 i=sample(1:13000,size=1);Cnoise[,,i]
 #it seems the ordering of the time stages is consistent but not chronological
 #It should be, 68hours, 24 hours, 1012hours
+colheader = h5read(dataHDF5,name='phenotype/col_header')
 
 h5genes=h5read(summaryHDF5,name='geneID')
 h5genes=simplify2array(strsplit(x=h5genes,split='_'))
@@ -47,18 +55,57 @@ match(h5genes,genes.gr)
 ###As a very rough and ready idea - we could just multiply the variances in the diagonal of each
 #variance measure by the magnitude as measured in the power law data
 #matrix with 
+dim(Ccis)
+dim(Ctrans)
+dim(Cnoise)
 
 cage.tpsum=sapply(tps[1:3],function(tp){rowSums(genes.gr$cg.pl[,cage.tps==tp])})
-variance.bystage=t(sapply(1:dim(Ccis)[3],function(i){diag(Ccis[,,i])}))
+
+mat=matrix(1:9,ncol=3)
+delta=  abs(row(mat)-col(mat))!=0#logical matrix for extracting diagonals
+#Now go through the covariance matrices and subtract to get our stage specific variation
+variance.bystage = sapply(simplify=F,list(Ccis,Ctrans,Cnoise),function(x){
+	m=t(sapply(1:(dim(x)[3]),function(i){
+	mat = x[,,i]
+	d = diag(mat)
+	d - max(c(d[delta],0))
+	}))
+	colnames(m)<-var_decomp_tps
+	m
+})
+names(variance.bystage)=c('Cis','Trans','Noise')
+
+str(variance.bystage)
+
 variance.bystage=variance.bystage[,c(2,1,3)]
+
+#now re-arrange to correct time stages
 
 #now multiply those variances by the correct 
 
+mdat = melt(variance.bystage)
+unique(mdat$Var2)
+unique(mdat$Var1)
+head(mdat)
+colnames(mdat)
+#Now plot 
 
 
+pdf('analysis/gene_variance/decomp_variance_boxplots.pdf')
+qplot(data=mdat,color=factor(Var2),geom='boxplot',facet='L1',
+	main='Divergence by Timepoint',x=factor(Var2),y=value,notch=T)+
+	scale_x_discrete(name='Timepoint')+
+	scale_y_log10(name='Divergence')
+	#scale_y_continuous(name='Divergence',limits=c(0,0.1))
+#now do teh means
 
-
-
+	# pdf('analysis/gene_variance/decomp_variance_boxplots.pdf')
+ggplot(data=mdat,aes(color=factor(Var2),x=factor(L1),y=value))+
+ggtitle('Divergence by Timepoint')+
+	stat_summary(fun.data='mean_cl_boot',geom='errorbar',position='jitter')+
+	scale_x_discrete(name='Timepoint')+
+	scale_y_log10(name='Divergence')
+dev.off()
 
 #checking ont he variance data
 #the data may be normalized such that genes have equal variance however. We need to check
@@ -82,15 +129,18 @@ as.integer(tmp[13034]) == as.numeric(1)
 tmp[13034] %% 1 
 
 
+
 #Now we can do some plotting!
 p = qplot(main = '' )
 ggsave(filename='analysis/gene_variance/Variance_vs_Gene_Density',plot = p)
 
 #cis variability vs gene density
 #for stage specific and non stage specific
-
-
 #trans variability vs gene density
+
+
+
+
 
 
 
@@ -214,17 +264,7 @@ dev.off()
 
 
 
-
-
-
-
 #load cage and 3' data, normalized
-
-
-
-
-
 #get matrix of counts
-
 
 #Compare sets using boxplots 
