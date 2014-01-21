@@ -124,16 +124,16 @@ cad3.gr$z.rna.seq = getBestWindowMat(cad3.gr.wide,z.rna.seq)
 ####TODO - turn the above into loops - as below
 gene.annotations = c('transcripts.gr','tss.gr','genes.gr')[1:2]
 crm.annotations = c('crm8008.gr','cad3.gr')
-expr.datasets = c('cg','cg.pl','cg.mapfilt','cg.mapfilt.pl','ts','ts.pl','rna.seq','c.rna.seq','z.rna.seq')[1:2
+expr.datasets = c('cg','cg.pl','cg.mapfilt','cg.mapfilt.pl','ts','ts.pl','rna.seq','c.rna.seq','z.rna.seq')[1:2]
 
 
-sapply(simplify=F,gene.annotations,function(region){
+expr.mats=sapply(simplify=F,gene.annotations,function(region){
   # browser()
   region=get(region)[1:10]
 	sapply(simplify=F,expr.datasets,function(data){
 		suppressWarnings({wideregion = resize(transcripts.gr,width=width(transcripts.gr)+250,fix='center')})
 		wideregion=sort(wideregion)
-		m=getStrandedExprMat(wideregion,get(data))
+		m=getStrandedExprMat(wideregion,get(data)[1:2])
 		rownames(m)=wideregion$id
     m[as.character(region$id),]
   })
