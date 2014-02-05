@@ -118,8 +118,13 @@ dim(endmat[[3]])
 
 
 ###### 6 Now get correlations of matching libraries
+load(file.accession.df)
+load('data/objects/tagseq.df.object.R')
+tssmat = expr.mats$genes.gr$cg.pl
+tssmat = sapply(tps,function(tp)tssmat[,accession.df$time==tp & accession.df$tissue=='embryo'])
+endmat = expr.mats$genes.gr$ts.pl
+endmat = sapply(tps,function(tp)endmat[,tagseq.df$time==tp & tagseq.df$tissue=='embryo'])#get the correlation for each tss
 
-#get the correlation for each tss
 gene.cors.tp=sapply(simplify=F,tps,function(tp){
 	tp.accs  = accs[[tp]]
 	tp.taccs = taccs[[tp]]
