@@ -11,6 +11,15 @@ expect_SRL<-function(x,s=si){
 }
 
 
+expect_GR<-function(x,s=si){
+  # This function tests a SimpleRLeList object to make sure it
+  # is correct
+   expect_is(x,'GRanges')
+   expect_identical(seqinfo(x),si)
+   expect_false(length(x)==0)
+}
+
+
 #test the cage data
 test_that('Cage data read and processed correctly',{
   #The metadata
@@ -120,7 +129,21 @@ test_that('Datasets and CRM/Gene Annotation correctly integrated',{
   expect_true( 'z.rna.seq' %in% colnames(mcols(transcripts.gr)) )
   expect_true( 'cg' %in% colnames(mcols(transcripts.gr)) )
 
+  sapply(gene.annotations,function(g){expr.da})
+  identical(rapply(expr.mats,is,how='replace'),rapply(cg.pl,is,how='replace'))
 
+  #chose a random set from each gene region
+  totest=sample(1:length(region),10)
+  chrs= seqnames(region[totest])
+  starts=start(region)[totest]
+  ends=end(region)[totest]
+  #now for each region get the coordinates and chr
+  #use this to access our objects
+  #check our matrix matches the results
+
+  #get the score in these random sets according to our matrices
+
+  
 
 })
 
@@ -142,21 +165,36 @@ expect_true(actsum > 0)
 export(actgr,'/g/furlong/Harnett/TSS_CAGE_myfolder/tmp.bed')
 export(SRL,'/g/furlong/Harnett/TSS_CAGE_myfolder/tmp.bw')
 
-makeInspectionCovPlot<-function(x){
+makeInspectionCovPlot<-function(x,  actchr = 'chr2R', actstart = 5794894 - 10000 ,  actstop = 5794894 + 10000){
+  require(testthat)
 	require(chipseq)
 	expect_SRL(x)
-	actchr = 'chr2R'
-	actstart = 5794894 - 10000 
-	actstop = 5794894 + 10000
 	pdf('/g/furlong/Harnett/TSS_CAGE_myfolder/inspection_coverage_plot_tmp.pdf')
 	coverageplot(Views(x[[actchr]],actstart,actstop))
 	dev.off()
-
-
 }
+
+pdf('/g/furlong/Harnett/TSS_CAGE_myfolder/inspection_coverage_plot_tmp.pdf')
+actchr = 'chrX'
+  actstart = 18101918 - 1000 
+  actstop = 18102417 + 1000
+x = alltaglist.pl[['24hembryo']]$both
+coverageplot(Views(x[[actchr]],actstart,actstop))
+dev.off()
+
+
+
+viewSums(GRViews(gr=cad3.gr[569],rle=alltaglist.pl[[2]]$both))
+mean(expr.crm.mats$cad3.gr$cg.pl[569,accession.df$time=='24h'])
+
+
+coverageplot(Views(x[[actchr]],actstart,actstop))
+makeInspectionCovPlot(alltaglist.pl[[2]]$both)
+
 makeInspectionCovPlot(c.rna.seq[[1]])
 
 makeGvizCovPlot<-function(x){
+  require(testthat)
   require(chipseq)
   expect_SRL(x)
   actchr = 'chr2R'
@@ -166,8 +204,6 @@ makeGvizCovPlot<-function(x){
   pdf('/g/furlong/Harnett/TSS_CAGE_myfolder/inspection_coverage_plot_tmp.pdf')
   coverageplot(Views(x[[actchr]],actstart,actstop))
   dev.off()
-  
-  
 }
 
 # library(chipseq)
@@ -178,6 +214,7 @@ makeGvizCovPlot<-function(x){
 # coverageplot(Views(tmp3[[1]][['chr2R']],18931631,18937849))
 # coverageplot(Views(tmp4[[1]][['chr2R']],18931631,18937849))
 # dev.off()
+
 
 
 

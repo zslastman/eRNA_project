@@ -22,8 +22,9 @@ load(file.tss)
 # cad3.gr$cadcage = getBestWindowMat(cad3.gr,500,cg.pl.map)
 
 #for now just use the cagecountmatlist thing from oldscript. Ugly but fine..
-load('cagecountmatlist.object.R')
+load('/g/furlong/Harnett/TSS_CAGE_myfolder/data/objects/expr.crm.mats.object.R')
 cad3.gr$cadcage = do.call(cbind,cagecountmatlist[c(2,5,8)])
+cad3.gr$cadcage = expr.crm.mats$cad3.gr$cg.pl
 accs = accession.df$acc[accession.df$acc%in% colnames(cad3.gr$cadcage)]
 cad3.gr$cadcage = cad3.gr$cadcage[,accs]
 tps=accession.df$timepoint[match(accs,accession.df$acc)]
@@ -67,9 +68,20 @@ activity_pattern = factorFromLogicals(list('Active.at.24.hrs'=cad3.gr$active24,'
 activity_pattern = factor(activity_pattern)
 activity_pattern
 
+#pick out example cad3 crms
+example.cad = cad3.gr[activity_pattern==activity_pattern[3] & cad3.gr$intergenic & exp(cad3.gr$tp24tp68.lr) > 1.5]
+example.cad$tp24mean
+example.cad$tp68mean
+example.cad$tp24tp68.lr
+example.cad=example.cad[order(example.cad$tp24tp68.lr,decreasing=T)]
+example.cad$name = paste0('ex',1:length(example.cad),'_',example.cad$name)
+export(example.cad,'example_dynamic_Cad_eRNA.bed')
+
 #calculate fold change from 2-4, 4-8hrs, plot it as a function of mean
 
+
 #now split our crms by their activity pattern and show fold change
+
 
 library(ggplot2)
 dir.create('analysis/eRNA_dynamics')

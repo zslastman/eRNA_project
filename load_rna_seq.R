@@ -85,7 +85,13 @@ names(c.rna.seq.wig) = paste0('tp',gsub(x=c.rnawigs[i],pattern='.*(\\d\\d?)-(\\d
 c.rna.bams=list.files('/g/tier2/furlong/pakozdi/alignment/celniker/rna/merged/',pattern='bam$',full.names=T)
 c.rna.seq = mclapply(mc.cores=10,c.rna.bams,function(bam)bam2coverage(bam,doshift=F,doresize=F,stranded=F,is.ProperPair=NA,is.FirstMateRead=T,use.size=T,maxsize=600))
 names(c.rna.seq) = paste0('tp',gsub(x=c.rna.bams,pattern='.*(\\d\\dh).*',rep='\\1'))
+c.rna.seq = sapply(c.rna.seq,function(x){list(both=x)}
 
+
+#export bigwigs for these
+for(set in names(c.rna.seq)){
+    export( c.rna.seq[[set]],paste0('/g/furlong/Harnett/TSS_CAGE_myfolder/data/solexa/wig/celniker.rnaseq.',set,'.bw'))
+}
 
 
 ################################################################################

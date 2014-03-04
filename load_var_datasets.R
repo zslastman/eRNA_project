@@ -8,7 +8,7 @@ windowsize=20000
 
 
 #First get the names of all the motif files
-motif.files=list.files('/g/furlong/Harnett/TSS_CAGE_myfolder/data/scanPWMoutput/p002t3/',full.name=T,pattern='output\\.clean\\.bed$')
+motif.files=list.files('/g/furlong/Harnett/TSS_CAGE_myfolder/data/fimo/fimo_out/fimo.gff',full.name=T,pattern='output\\.clean\\.bed$')
 #only those files which are reasonably big
 motif.files = Filter(function(x)file.info(x)$size > 200 ,motif.files)
 motif.names=list.files('/g/furlong/Harnett/TSS_CAGE_myfolder/data/scanPWMoutput/p002t3/',full.name=F,pattern='output\\.clean\\.bed$')
@@ -25,6 +25,12 @@ jasparnames = read.delim(header=F,'data/jaspar_names.txt')
 colnames(jasparnames) = c('MAnum','symbol')
 MAnames = as.character(jasparnames$symbol[match( MAnames, jasparnames$MAnum )])
 motif.names[grepl(x=motif.names,'MA\\d+')] <- MAnames
+
+
+
+
+motifs.file = '/g/furlong/Harnett/TSS_CAGE_myfolder/data/fimo/fimo_out/fimo.gff'
+
 
 
 #now read our files, using bedtools and the dnase peaks to subset each one

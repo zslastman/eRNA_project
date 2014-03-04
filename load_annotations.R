@@ -16,14 +16,14 @@ if(   all(sapply(c(file.transcripts,file.tssgr,file.gene.model.data),FUN=functio
   message('Transcript files already present, loaded')
 }else{
   #Load from the labs databse
-  library(RMySQL, lib.loc='/g/furlong/Degner/R')
+  library(RMySQL)
   # library(RPostgreSQL, lib.loc='/g/furlong/Degner/R')
 
   #first get info on accesions/ids/symbols (synonyms)
   dbase = dbConnect(MySQL(), user='furlong', password='gnolruf', host='gbcs', dbname='genomedb2')  
   synonyms  = dbGetQuery(dbase, "select id, gene_id, syn from genesynonyms_6 ")
   #we can leave out all but the FBgn ids
-  synonyms<-synonyms[grepl(x=synonyms$syn,'FBgn'),]
+  #synonyms<-synonyms[grepl(x=synonyms$syn,'FBgn'),]
   save(synonyms,file=file.synonyms)
 
   #Now load transcripts from the databse
@@ -188,7 +188,7 @@ crm8008.gr <- GRanges(seqnames=Rle(crm_list$CHR),
 crm8008.gr<-sort(crm8008.gr)
 
 # Define Intergenic CRMs
-crm_list$intergenic <- distanceToNearest(crm8008.gr,trancripts.lincs.gr)$distance>intergenic_dist
+crm8008.gr$intergenic <- distanceToNearest(crm8008.gr,trancripts.lincs.gr)$distance>intergenic_dist
 
 #check our crmgr object is the right length
 stopifnot(nrow(crm_list)==length(crm8008.gr))
@@ -294,7 +294,7 @@ cad3.gr$active68<-cad3.gr$O10%in%c(1,'S,V') | cad3.gr$O11%in%c(1,'S,V') | cad3.g
 cad3.gr$inactive1012<- cad3.gr$O13%in%0 & cad3.gr$M13%in%0 & cad3.gr$O14%in%0 & cad3.gr$M14%in%0 & cad3.gr$O15 %in%0 & cad3.gr$M15%in%0
 cad3.gr$active1012<-cad3.gr$O13%in%c(1,'S,V') | cad3.gr$M13%in%c(1,'S,V')  | cad3.gr$O14%in%c(1,'S,V') | cad3.gr$M14%in%c(1,'S,V')  | cad3.gr$O15%in%c(1,'S,V') | cad3.gr$M15%in%c(1,'S,V') 
 # Define Intergenic CRMs
-cad3.gr$intergenic<-  distanceToNearest(cad3.gr,trancripts.lincs.gr)$distance>intergenic_dist
+cad3.gr$intergenic <-  distanceToNearest(cad3.gr,trancripts.lincs.gr)$distance>intergenic_dist
 #catagory stating if te enhancer is one of guillames
 cad3.gr$GJ<-grepl('GJ\\d+',cad3.gr$name)
 #now export a bed file with our cad3 enhancers and names

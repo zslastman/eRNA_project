@@ -263,24 +263,3 @@ export(crm8008.gr[ crm8008.gr$in.tf.neg],con='analysis/make_regions_bedfiles/neg
 
 
 
-
-#######################################use all this data to define our datasets
-#define our datasets, a list of matrices
-possetlist=list(
-  tfset=cagecountmatlist[['crm8008','68h']][crm8008.gr$in.tf.pos,],
-  tf.27ac.set=cagecountmatlist[['crm8008','68h']][crm8008.gr$in.tf.pos & crm8008.gr$H3K27ac,],
-  tf.pol.set=cagecountmatlist[['crm8008','68h']][crm8008.gr$in.tf.pos & crm8008.gr$polII,],
-  tf.K79.set=cagecountmatlist[['crm8008','68h']][crm8008.gr$in.tf.pos & crm8008.gr$H3K79me3,],
-  # tf.K36.set=cagecountmatlist[['crm8008']][crm8008.gr$in.tf.pos & crm8008.gr$H3K36me3,],
-  tf.K4me1.set=cagecountmatlist[['crm8008','68h']][crm8008.gr$in.tf.pos & crm8008.gr$H3K4me1_peak,],
-  cad3pos=cagecountmatlist[['cad','68h']][cad3.gr$pos,]
-)
-negsetlist=list(
-  full.neg= cagecountmatlist[['crm8008','68h']][crm8008.gr$in.tf.neg & !crm8008.gr$H3K27ac & crm8008.gr$low.dnase & ! crm8008.gr$polII,],
-  cad.neg=  cagecountmatlist[['cad','68h']][cad3.gr$neg,]
-)
-
-
-
-
-

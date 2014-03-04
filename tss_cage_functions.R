@@ -69,29 +69,83 @@ l<-length
 cn<-colnames
 rn<-rownames
 
-# #function that takes a list of TSS and for each overlapping group, choooses the one with the highest score
-# gr = tss.gr
-# gr = resize(gr, width=500,fix='center')
-# #now we reduce it down to the overlapping ares
-# overlap = reduce(gr)
-# #then we pick the best TSS in each overlap
-# ov = findOverlaps(overlap,gr)#get overlaps
-# ov = ov [!ov@queryHits==ov@subjectHits,]#not self overlaps
-# #go through each overlap, and if 
-
-#take in the grange, and the score vector
 
 
-#if there are overlaps, choose the one with the highest mean
+getBimodalCutoff <- function(x,knum,startquants=c(0.05,0.95),proba=0.5, i=index.lower) {
+  require(mixtools)
+  #model as bimodal
+  model <- normalmixEM(x=x, k=knum,mu=quantile(x,startquants))
+  index.lower <- which.min(model$mu)  # Index of component with lower mean
+  ## Cutoff such that Pr[drawn from bad component] == proba
+  f <- function(x) {
+       proba - (model$lambda[i]*dnorm(x, model$mu[i], model$sigma[i]) /
+                    (model$lambda[1]*dnorm(x, model$mu[1], model$sigma[1]) + model$lambda[2]*dnorm(x, model$mu[2], model$sigma[2])))
+       }
+  return(uniroot(f=f, lower=-10, upper=10)$root)  # Careful with division by zero if changing lower and upper
+}
 
 
-#generate nearest expr 
-#get the mean over the tss
-#take in a grange of crms
-#a grange object for the crm, take in the grange for the gtss
-#get the mean expression
+convertID2GRange = function(ids){
+  gsplit=simplify2array(strsplit(ids,split='_'))
+  gr = GRanges(
+    gsplit[1,],IRanges(as.numeric(gsplit[2,]),as.numeric(gsplit[3,])) ,
+    strand = ifelse(gsplit[2,]<gsplit[3,],'+','-'),seqinfo=si,id=ids
+  )
+  return(gr)
+}
 
-# transcripts.gr[nearest(crm8008.gr,transcripts.gr)]
+
+
+expect_SRL<-function(x,s=si){
+  # This function tests a SimpleRLeList object to make sure it
+  # is correct
+   expect_is(x,'SimpleRleList')
+   expect_equal(names(x),seqnames(s))
+   expect_equal(sapply(x,length),seqlengths(s))
+   expect_false(all(sum(x)==0))
+}
+
+
+expect_GR<-function(x,s=si){
+  # This function tests a SimpleRLeList object to make sure it
+  # is correct
+   expect_is(x,'GRanges')
+   expect_identical(seqinfo(x),si)
+   expect_false(length(x)==0)
+}
+
+
+################################################################################
+#1 Get Expression Scores for the RNAseq, Cage and Tagseq datasets
+getStrandedExprMat <- function(gr,SRLs){
+  #function that takes in some SimpleRleLists (e.g. RNAseq data)
+  #which have a 'positive' and 'negative' sublist structure
+  #and then gets uses the GRViews function to get the strand specific
+  #score for each of the input regions in each of the SRLs 
+  # browser()
+    require(testthat)
+    if(all(gr!=sort(gr))){warn('unsorted GRanges object - returned views may not be in same order')}
+    a=simplify2array(mclapply(mc.cores=10,SRLs,function(SRL){#use mclapply to iterate over the SRLSs
+      if(identical(names(SRL)[1:2],c('pos','neg'))) {#if we have pos and neg run seperately on them
+        cat('.')
+        v=rep(0,length(gr))
+        ispos  = as.vector(strand(gr)=='+')#Splitting our granges by strand
+        isneg  = as.vector(strand(gr)=='-')
+        isstar = as.vector(strand(gr)=='*')
+        expect_true(all( ispos | isneg | isstar))
+        if(any(isneg)){  v[ isneg ] = unlist(viewSums(GRViews(SRL$neg,gr[ isneg ]))) }
+        if(any(ispos)){   v[ ispos ] = unlist(viewSums(GRViews(SRL$pos,gr[ ispos ] ))) }
+        if(any(isstar)){  v[ isstar ] = unlist(viewSums(GRViews(SRL$pos,gr[ isstar ] ))) +
+           unlist(viewSums(GRViews(SRL$neg,gr[ isstar ] ))) }
+        expect_is(v,c('numeric','vector'))
+        v
+      }else{#else just run GRViews on it
+        unlist(viewSums(GRViews(SRL,gr)))
+      }
+      # Carries out Views on a GRange object ------------------------------------
+  }))
+    a
+}
 
 overlapsAny<-function(gr,peaklist,maxgap=50){
   0 < rowSums(sapply(peaklist,function(peaks){
@@ -266,6 +320,49 @@ getOffset<-function(alpha,T=1000000){
 }
 
 
+
+getBestWindowMat <- function (reg, windowsize, chrs.keep, big=bigchrs, cage=cg) {
+   #make sure th
+  stopifnot(all(seqnames(reg)%in%big))
+  stopifnot(reg==sort(reg))
+  # sapply(simplify=F,c(10,100,500),function(w){
+  #make sure all our regions are at least the window size
+  reg<-resize(reg,width=pmax(width(reg),windowsize),fix='center')
+  cat('.')
+    #convert them to a Rangelist for Views
+  winds<-
+  as(nomcols(reg),'RangesList')[big]
+  winds<-winds[big]
+  cat('.')
+  # starts<-unlist(start(winds))
+  #chrs<-names(starts) 
+  #for each line
+  nostrand = F
+  posneg = F
+  if(all(sapply(cage,function(x)'SimpleRleList'%in%is(x)))){nostrand = T}
+  if(all(sapply(cage,function(x){all(names(x)[1:2] == c('pos','neg'))}))) {posneg = T}
+  expect_true(nostrand | posneg)
+#j
+  maxwinds<-lapply(cage,FUN=function(acc){
+    if(posneg){
+      #now get the windowed views for each window
+      v<-unlist(viewApply(Views(acc[['pos']][big],winds[big]),FUN=function(x){ (runsum(x,windowsize)) }))
+      v.n<-unlist(viewApply(Views(acc[['neg']][big],winds[big]),FUN=function(x){ (runsum(x,windowsize)) }))
+      #get the bigger of the two strands
+      ispos<-(sapply(v,max)>sapply(v.n,max))
+      v<-ifelse( ispos,v,v.n)
+      sapply(v,max)
+    }else{
+      expect_true(nostrand)
+      v<-unlist(viewApply(Views(acc[big],winds[big]),FUN=function(x){ (runsum(x,windowsize)) }))
+      sapply(v,max)
+    }
+  })
+  return(simplify2array(maxwinds))
+}
+
+
+
 #strips mcols from a gr object
 nomcols<-function(gr){mcols(gr)<-NULL;gr}#function that strips mcols from a GRanges object
 
@@ -292,7 +389,9 @@ combinegrs<-function(grlist){
 
 # Carries out Views on a GRange object ------------------------------------
 GRViews<-function(rle,gr){
-  if(gr!=sort(gr)){warn('unsorted GRanges object - returned views may not be in same order')}
+  expect_SRL(rle)
+  expect_GR(gr)
+  expect_identical(gr,sort(gr))
   v=Views(rle[seqlevels(gr)],as(gr,'RangesList'))[seqlevels(gr)]
   v=v[sapply(v,function(x){length(x)!=0})]
   return(v)
@@ -621,13 +720,15 @@ getBestSingleWindow <- function (reg, w, chrs.keep, big=bigchrs, cage=cg) {
 
 
   #make sure th
-getBestWindowMat <- function (reg, w, chrs.keep, big=bigchrs, cage=cg) {
+getBestWindowMat <- function (reg, windowsize, chrs.keep, big=bigchrs, cage=cg) {
    #make sure th
   stopifnot(all(seqnames(reg)%in%big))
   stopifnot(reg==sort(reg))
+  for(i in 1:length(cage)){expect_SRL(cage[[i]])}
+
   # sapply(simplify=F,c(10,100,500),function(w){
   #make sure all our regions are at least the window size
-  reg<-resize(reg,width=pmax(width(reg),w),fix='center')
+  reg<-resize(reg,width=pmax(width(reg),windowsize),fix='center')
   cat('.')
     #convert them to a Rangelist for Views
   winds<-as(reg,'RangesList')[big]
@@ -635,15 +736,25 @@ getBestWindowMat <- function (reg, w, chrs.keep, big=bigchrs, cage=cg) {
   cat('.')
   # starts<-unlist(start(winds))
   #chrs<-names(starts) 
-  #for each line  
-  maxwinds<-mclapply(mc.cores=10,cage,winds,FUN=function(acc,winds){
-    #now get the windowed views for each window
-    v<-unlist(viewApply(Views(acc[['pos']][big],winds[big]),FUN=function(x){ (runsum(x,w)) }))
-    v.n<-unlist(viewApply(Views(acc[['neg']][big],winds[big]),FUN=function(x){ (runsum(x,w)) }))
-    #get the bigger of the two strands
-    ispos<-(sapply(v,max)>sapply(v.n,max))
-    v<-ifelse( ispos,v,v.n)
-    sapply(v,max)
+  #for each line
+  if(all(sapply(cage,function(x)'SimpleRleList'%in%is(x)))){nostrand = T}
+  if(all(sapply(cage,function(x){all(names(x)[1:2] == c('pos','neg'))}))) {posneg = T}
+  expect_true(nostrand | posneg)
+
+  maxwinds<-mclapply(mc.cores=10,cage,FUN=function(acc){
+    if(posneg){
+      #now get the windowed views for each window
+      v<-unlist(viewApply(Views(acc[['pos']][big],winds[big]),FUN=function(x){ (runsum(x,windowsize)) }))
+      v.n<-unlist(viewApply(Views(acc[['neg']][big],winds[big]),FUN=function(x){ (runsum(x,windowsize)) }))
+      #get the bigger of the two strands
+      ispos<-(sapply(v,max)>sapply(v.n,max))
+      v<-ifelse( ispos,v,v.n)
+      sapply(v,max)
+    }else{
+      expect_true(nostrand)
+      v<-unlist(viewApply(Views(acc[big],winds[big]),FUN=function(x){ (runsum(x,windowsize)) }))
+      sapply(v,max)
+    }
   })
   return(simplify2array(maxwinds))
 }

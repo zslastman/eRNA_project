@@ -111,7 +111,6 @@ save(accession.df,file='data/objects/accession.df.object.R')
 accession.df[accession.df$sample%in%c('18E','27H','13B','27B'),]
 
 
-
 ################################################################################
 #4 Read in the bam files as RLE lists --------------------------------------
 message('reading bam files....')
@@ -176,28 +175,53 @@ names(cg.mapfilt.pl)<-accession.df$acc
 save(cg.mapfilt.pl,file='data/objects/cg.mapfilt.pl.object.R')
 
 ################################################################################
+
+accession.df$accession %in% names(cg.pl)
+accession.df$acc%in% names(cg.pl)
+
+splitaccs=with(accession.df,split(acc,paste0(timepoint,tissue)))
+splitaccs[[3]] %in% names(cg.pl)
+
+
 #6 create a summed alltags object for each timepoint
 message('summing cage tags')
 #split our accs into a list of grouped libraries
 splitaccs=with(accession.df,split(accession,paste0(timepoint,tissue)))
 #now use this list to sum up the libraries
 alltaglist=mclapply(mc.cores=4,splitaccs,function(accs){
-  accs=accs
-  cg.pl=cg.pl[accs]
   alltags=list(
-      pos=Reduce('+',sapply(cg.pl,'[[','pos')),
-      neg=Reduce('+',sapply(cg.pl,'[[','neg'))
+      pos=Reduce('+',sapply(cg[[acc]],'[[','pos')),
+      neg=Reduce('+',sapply(cg[[acc]],'[[','neg'))
     )
   alltags$both=alltags$pos+alltags$neg#and add a both rle for each one.
   alltags
 })
 #export bigwigs for these
 for(set in names(alltaglist)){
-    export(alltaglist[[set]]$pos,paste0('/g/furlong/Harnett/TSS_CAGE_myfolder/data/solexa/wig/allcage.',set,'.pl.pos.bw'))
-    export(alltaglist[[set]]$neg,paste0('/g/furlong/Harnett/TSS_CAGE_myfolder/data/solexa/wig/allcage.',set,'.pl.neg.bw'))
+    export(alltaglist[[set]]$pos,paste0('/g/furlong/Harnett/TSS_CAGE_myfolder/data/solexa/wig/allcage.',set,'.pos.bw'))
+    export(alltaglist[[set]]$neg,paste0('/g/furlong/Harnett/TSS_CAGE_myfolder/data/solexa/wig/allcage.',set,'.neg.bw'))
 }
 #Also one which just has the sum of ALL sites
 save(alltaglist,file='data/objects/alltaglist.object.R')
+##And for the pl normalized 
+#now use this list to sum up the libraries
+alltaglist.pl=mclapply(mc.cores=4,splitaccs,function(accs){
+  alltags=list(
+      pos= Reduce('+',sapply(cg.pl[accs],'[[','pos')) ,
+      neg=Reduce('+',sapply(cg.pl[accs],'[[','neg'))
+    )
+  alltags$both=alltags$pos+alltags$neg#and add a both rle for each one.
+  alltags = lapply(alltags,'/',length(accs))
+})
+#export bigwigs for these
+for(set in names(alltaglist.pl)){
+    export( alltaglist.pl[[set]]$pos,paste0('/g/furlong/Harnett/TSS_CAGE_myfolder/data/solexa/wig/allcage.',set,'.pl.pos.bw'))
+    export(alltaglist.pl[[set]]$neg,paste0('/g/furlong/Harnett/TSS_CAGE_myfolder/data/solexa/wig/allcage.',set,'.pl.neg.bw'))
+    export(alltaglist.pl[[set]]$both,paste0('/g/furlong/Harnett/TSS_CAGE_myfolder/data/solexa/wig/allcage.',set,'.pl.both.bw'))
+
+}
+#Also one which just has the sum of ALL sites
+save(alltaglist.pl,file='data/objects/alltaglist.pl.object.R')
 
 
 

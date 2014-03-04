@@ -285,7 +285,20 @@ limm
 #Simplest kind of modelling - what they did in the hourglass paper
 #dummy data, a cell is described in the simplest case by it's 
 
+#modencode data
+list.files('data/modencode/')
 
 
 
+library(rhdf5)
+summary3PC <- '/g/furlong/project/24_TSSCAGE/analysis/linix_output_PowerLawOnly/summary3PC.hdf5'
+summaryHDF5 <- '/g/furlong/project/24_TSSCAGE/analysis/linix_output_testwiseperm/summary.hdf5'
+lsHDF5 <- h5ls(summaryHDF5,recursive=F)
+ls3PC <- h5ls(summary3PC,recursive=F)
+dim(h5read(summaryHDF5,'Ccis'))
 
+
+lsHDF5 <- h5ls(summaryHDF5,recursive=F)
+lsHDF5[1:10,]
+summary(h5read(summaryHDF5,'Venv'))
+sort(table()[1:10]

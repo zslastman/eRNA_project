@@ -3,7 +3,7 @@ source('src/tss_cage_functions.R')
 genomesize <- sum(seqlengths(Dmelanogaster))#genome length
 
 kchromatinFolder = '/g/tier2/furlong/project/11_Histone_ChIP_seq/BiTS-ChIP/alignment/'
-fraglength=190=
+fraglength=190
 chrom_bam_files =  list(
     PolII_6.8_R1= paste0( kchromatinFolder, '6-8h/bam/B-PolII-Rpb3-6-8h.bam'),
     PolII_6.8_R2= paste0( kchromatinFolder, '6-8h/bam/B51_PolII-Rpb3_6-8h.bam'),
@@ -38,7 +38,9 @@ if(file.exists(file.chrom.rles.rpgc.sub.merge)){
   #read chromatin files
   chrom.rles<-mclapply(mc.cores=10,chrom_bam_files,function(x)bam2coverage(x,doshift=T,fragment.length=fraglength,use.size=F))
   input.rles<-mclapply(mc.cores=10,input_bam_files,function(x)bam2coverage(x,doshift=F,doresize=F,use.size=F))
-  stopifnot(class(chrom.rles[[1]])=='SimpleRleList')
+  sapply(chrom.rles,expect_SRL)
+  sapply(input.rles,expect_SRL)
+
   
   names(chrom.rles)<-names(chrom_bam_files)#name them
   names(input.rles)<-names(input_bam_files)#name them
@@ -96,7 +98,7 @@ if(file.exists(file.chrom.rles.rpgc.sub.merge)){
 chrompeakfiles<-list.files('data/chromatin/',pattern='.bed|.txt',full.names=T)
 
 chrompeaks<-sapply(chrompeakfiles,function(filen){
-  cat(filen)
+  message(filen)
   suppressWarnings({
       #import the bed files
     if(grepl('.bed',filen)){
@@ -161,12 +163,19 @@ names(chrompeaks.modencode)<-  gsub('.*//(\\w+?)_.*(\\d\\-\\dh)_.*','\\1_\\2',na
 # Modencode continous signal ----------------------------------------------
 #modencode data
 chrom.rles.modencode<-list(
-  K27ac_0.4h='data/modencode/coverage_wigs/0-4hr/H3K27ac-Developmental-Stage=Embryos-0-4-hr#Strain=Y-cn-bw-sp-ChIP-seq-Rep-1-ChIP-Dmel_r5.32-modENCODE_834.wig.gz',
+  K27ac_0.4h= 'data/modencode/coverage_wigs/0-4hr/H3K27ac-Developmental-Stage=Embryos-0-4-hr#Strain=Y-cn-bw-sp-ChIP-seq-Rep-1-ChIP-Dmel_r5.32-modENCODE_834.wig',
   K27ac_4.8h='data/modencode/coverage_wigs/4-8hr/H3K27ac-Developmental-Stage=Embryos-4-8-hr#Strain=Y-cn-bw-sp-ChIP-seq-Rep-1-ChIP-Dmel_r5.32-modENCODE_835.wig',
-  K27ac_8.12h='data/modencode/coverage_wigs/8-12hr/H3K27ac-Developmental-Stage=Embryos-8-12-hr#Strain=Y-cn-bw-sp-ChIP-seq-Rep-1-ChIP-Dmel_r5.32-modENCODE_836.wig.gz',
-  PolII_4.8h='data/modencode/coverage_wigs/4-8hr/PolII-E4-8__density.wig'
+  K27ac_8.12h='data/modencode/coverage_wigs/8-12hr/H3K27ac-Developmental-Stage=Embryos-8-12-hr#Strain=Y-cn-bw-sp-ChIP-seq-Rep-1-ChIP-Dmel_r5.32-modENCODE_836.wig',
+  PolII_4.8h="/g/furlong/Harnett/TSS_CAGE_myfolder/data/modencode/coverage_wigs/4-8hr/PolII-E4-8__density.wig"
 )
+
+expect_true( all( sapply(chrom.rles.modencode,file.exists)))
+
 chrom.rles.modencode<-sapply(chrom.rles.modencode,function(wigfile){
+  if( grepl('.gz$',wigfile) ){
+    system(paste0('gunzip ', wigfile))
+    wigfile = gsub(wigfile,pat='(.*)\\.gz$',rep='\\1')
+  }
   mark.modencode<-import(format='wig',wigfile)
   mark.modencode<-as(mark.modencode[chrs.keep],'GRanges')
   seqlevels(mark.modencode)<-seqlevels(si)
@@ -193,24 +202,24 @@ if(!file.exists(file.dnase.rles)){
 
 
 
-
-
-
 ################################################################################################
 # Also load dnase peaks ---------------------------------------------------
 #first just load the peaks for stages 10,11
 if(file.exists(file.dnase.peaks)){
   load(file.dnase.peaks)
 }else{
-  dnase.files<-list.files(full.names=T,'/g/tier2/furlong/jdegner/THOMAS_ETAL_11_DATA/MACS_PEAKS/',pattern='STG1[01].*peaks.bed$')
-  f<-dnase.files[1]
+  dnase.files<-list.files(full.names=T,'/g/furlong/Harnett/TSS_CAGE_myfolder/data/dnase_thomas_etal/',pattern='.bed$')
   dnase.peaks<-sapply(dnase.files,function(f){
-    tmp<-import(f,asRangedData=F)
-    tmp$name<-paste0(gsub(pattern='.*(STG.*R\\d).*','\\1',f),1:length(tmp))
+    tmp<-import(f,asRangedData=F)  
+    tmp$stage = gsub('.*bdtnpDnaseAccS(\\d\\d?)\\.bed','stg\\1',f)
     tmp
   })
+  stopifnot(all(grepl('bdtnpDnaseAccS\\d\\d?.bed$',dnase.files)))
+  names(dnase.peaks) =   gsub('.*bdtnpDnaseAccS(\\d\\d?)\\.bed','stg\\1',names(dnase.peaks))
+ # dnase.peaks = GRangesList(dnase.peaks)
   dnase.peaks<-reduce(do.call('c',unname(dnase.peaks)))
-  dnase.peaks$name<-paste0('dnase_10.11',1:length(dnase.peaks))
-  dnase.peaks<-keepSeqlevels(dnase.peaks,chrs.keep)
+  # dnase.peaks$name<-paste0('dnase_10.11',1:length(dnase.peaks))
+  dnase.peaks<-keepSeqlevels(dnase.peaks,chrs.keep[chrs.keep %in% seqlevels(dnase.peaks)])
+  seqinfo(dnase.peaks) <- si
   save(dnase.peaks,file=file.dnase.peaks)
 }
