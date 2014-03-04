@@ -39,46 +39,22 @@ save(tss.gr)
 
 #let's do this with dummy data first
 #vector of gene signals
-gn=200
-gsigs=log(10^(seq(1,3,length.out=gn)))
-#vector of library sizes
-reptable=accession.df
-reptable=reptable[reptable$tissue=='embryo',]
-libsizes=reptable$library.size
-samplegroups=c('timepoint','line','collection','prep','seq')
-reptable=reptable[,c('acc','seq','prep','collection','line','timepoint')]
-
-#vector of noise magnitudes for each different factor (seq, techrep, collection(biorep),line)
-noisemags=c('seq'=0.1,'prep'=0.1,'collection'=0.2,'line'=0.5,'timepoint'=1)
-#create matrix of counts
-simcountmat=matrix(gsigs,nrow=length(gsigs),ncol=length(libsizes))
-colnames(simcountmat)=reptable$acc
-#for(reptype in names(noisemags) ){
-
-for(reptype in samplegroups ){
-	SD=sqrt(noisemags[[reptype]])
-	repvect=reptable[,reptype]
-	for(repn in unique(repvect)){
-		simcountmat[,repvect==repn] = rnorm(n=gn,
-			mean=simcountmat[,repvect==repn],
-			sd=SD
-			)
-	}
-}
-colnames(simcountmat)=reptable$acc
-# simcountmat=simcountmat[,reptable$line%in%c('303','714')]
-
-# pdf(h=14,w=14,'analysis/gene_variance_all/sampledistheatmap.pdf')
-# par(mar=c(2,2,2,2),cex.lab=0.2,cex=8)
-# heatmap(Rowv=NA,simcountmat)
-# dev.off()
 
 
-fancol(simcountmat)
+	
+
+
 libsizes=libsizes/mean(libsizes)
 for(n in seq_along(libsizes)){
 	simcountmat[,n]=rpois(n=gn,lambda=exp(simcountmat[,n])*libsizes[n])
 }
+
+
+
+
+
+
+
 
 dobs=lapply(1:4,function(n){#estimate dispersions amongst
 	reptypes=samplegroups[1:(n)]
