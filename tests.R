@@ -19,6 +19,12 @@ expect_GR<-function(x,s=si){
    expect_false(length(x)==0)
 }
 
+#check we have a list of numeric matrices
+expect_num_mat_list<-function(matlist){
+  #recursively check structre, values not zero
+  rapply(matlist,function(x){expect_true(identical(is(x),is(matrix(0))))})
+  rapply(matlist,function(x){expect_false({all(x==0)})})
+}
 
 #test the cage data
 test_that('Cage data read and processed correctly',{
@@ -117,22 +123,29 @@ save(rna.seq,c.rna.seq.wig,c.rna.seq,z.rna.rles,file='data/objects/rna.seq.objec
 test_that('test',{expect_SRL(cg[[1]][[1]]}))
 
 
+
 #Test the annotations have been scored correctly
 test_that('Datasets and CRM/Gene Annotation correctly integrated',{
   #
-  expect_true( 'cg' %in% colnames(mcols(transcripts.gr)) )
-  expect_true( 'cg.pl' %in% colnames(mcols(transcripts.gr)) )
-  expect_true( 'ts' %in% colnames(mcols(transcripts.gr)) )
-  expect_true( 'ts.pl' %in% colnames(mcols(transcripts.gr)) )
-  expect_true( 'rna.seq' %in% colnames(mcols(transcripts.gr)) )
-  expect_true( 'c.rna.seq' %in% colnames(mcols(transcripts.gr)) )
-  expect_true( 'z.rna.seq' %in% colnames(mcols(transcripts.gr)) )
-  expect_true( 'cg' %in% colnames(mcols(transcripts.gr)) )
+  # expect_true( 'cg' %in% colnames(mcols(transcripts.gr)) )
+  # expect_true( 'cg.pl' %in% colnames(mcols(transcripts.gr)) )
+  # expect_true( 'ts' %in% colnames(mcols(transcripts.gr)) )
+  # expect_true( 'ts.pl' %in% colnames(mcols(transcripts.gr)) )
+  # expect_true( 'rna.seq' %in% colnames(mcols(transcripts.gr)) )
+  # expect_true( 'c.rna.seq' %in% colnames(mcols(transcripts.gr)) )
+  # expect_true( 'z.rna.seq' %in% colnames(mcols(transcripts.gr)) )
+  # expect_true( 'cg' %in% colnames(mcols(transcripts.gr)) )
 
-  sapply(gene.annotations,function(g){expr.da})
-  identical(rapply(expr.mats,is,how='replace'),rapply(cg.pl,is,how='replace'))
+  # sapply(gene.annotations,function(g){expr.da})
+  # identical(rapply(expr.mats,is,how='replace'),rapply(cg.pl,is,how='replace'))
+  expect_num_mat_list(expr.mats)
+  expect_num_mat_list(expr.crm.mats)
 
+
+
+})
   #chose a random set from each gene region
+
   totest=sample(1:length(region),10)
   chrs= seqnames(region[totest])
   starts=start(region)[totest]
@@ -143,7 +156,10 @@ test_that('Datasets and CRM/Gene Annotation correctly integrated',{
 
   #get the score in these random sets according to our matrices
 
-  
+  expect_true(expr.mats)
+
+
+
 
 })
 

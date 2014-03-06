@@ -58,20 +58,6 @@ h5sumgenes.gr$Gene[dn$distance>500] <- NA
 # a[ind]
 # identical(a[ind],b)#WRONG
 # identical(a,b[ind])#RIGHT
-
-# #now get the variance data as per ollies email
-# vlist=list(
-#   Venv = h5read(summaryHDF5,name='Venv'),
-#   Vcis = h5read(summaryHDF5,name='Vcis'),
-#   Vtrans = h5read(summaryHDF5,name='Vtrans'),
-#   Vnoise = h5read(summaryHDF5,name='Vnoise')
-# )
-# clist=list(
-#   Cnoise = h5read(summaryHDF5,name='Cnoise'),
-#   Ccis = h5read(summaryHDF5,name='Ccis'),
-#   Ctrans = h5read(summaryHDF5,name='Ctrans')
-# )
-
 #now get the variance data as per ollies email
 Venv = h5read(summaryHDF5,name='Venv')
 Vcis = h5read(summaryHDF5,name='Vcis')
@@ -112,7 +98,7 @@ var.spec = setNames(nm=c('Cis','Trans','Noise'),
     rownames(m)=h5genes.summary.id
     m
   })
-  )
+)
 #and the shared
 var.shared = setNames(nm=c('Cis','Trans','Noise'),
     m=sapply(simplify=F,list(Ccis,Ctrans,Cnoise),function(x){
@@ -123,19 +109,19 @@ var.shared = setNames(nm=c('Cis','Trans','Noise'),
     names(m)=h5genes.summary.id
     m
   })
-  )
+)
 
 #and the combined for various tps
 var.all = setNames(nm=c('Cis','Trans','Noise'),
-  sapply(simplify=F,list(Ccis,Ctrans,Cnoise),function(x){
-  m=t(sapply(1:(dim(x)[3]),function(i){
-    d=diag(x[,,i]) 
-    names(d)=var_decomp_tps
-    d
-  }))
-  rownames(m)=h5genes.summary.id
-  m
-})
+    sapply(simplify=F,list(Ccis,Ctrans,Cnoise),function(x){
+    m=t(sapply(1:(dim(x)[3]),function(i){
+      d=diag(x[,,i]) 
+      names(d)=var_decomp_tps
+      d
+    }))
+    rownames(m)=h5genes.summary.id
+    m
+  })
 )
 
 #now, we need to scale the variances by multiplying them by the sd for all stages, and then dividing by the
@@ -223,11 +209,7 @@ means = apply(peakcounts,1,mean)
 
 
 #How big is the technical variance? We can ask what the variance 
-coeff.var = 
-apply(vfit$coefficients,1,var) / vfit$std
 
-
-apply(vfit$coefficients,1,sd) / vfit$std
 
 
 save.image('tmp.image.R')
@@ -245,6 +227,12 @@ limmavar <- apply(fit$coef,1,var)
 #limmavar <- apply(fit$coef/fit$stdev.unscaled/fit$sigma , 1 , mean)
 
 dir.create('analysis/variance_rankings')
+
+
+#Let's 
+cage.tps = accession.df$timepoint[ match(colnames(peakcounts),accession.df$accession))]
+cage.tpsum=sapply(tps,function(tp){rowSums(peakcounts[,cage.tps==tp])})
+
 
 # limmavar <- rnorm(length(fit$sigma))
 pdf('analysis/variance_rankings/limma.output.pdf')
@@ -279,6 +267,10 @@ rs=(meanstagetable[,3])
 
 pdf('analysis/variance_rankings/limmavar_vs_mean.pdf')
 heatscatter( x = log10(rs[sumord]) , y = limmavar )
+dev.off()
+
+pdf('analysis/variance_rankings/limmavar_vs_std.unsc.pdf')
+heatscatter( x = log10(rs[sumord]) , y = vfit$std )
 dev.off()
 
 pdf('analysis/variance_rankings/limmasig_vs_mean.pdf')

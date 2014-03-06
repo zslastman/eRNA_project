@@ -119,4 +119,4 @@ venn.diagram(setlist,'filter_Venn_Diagrams.tiff',fill=rainbow(length(setlist)))
 venn.diagram(setlist[-1],'filter_Venn_Diagrams_4.tiff',fill=rainbow(length(setlist[-1])))
 
 
-
+save(genes.gr,tss.gr,transcripts.gr,file='data/objects/scored.annotation.R')

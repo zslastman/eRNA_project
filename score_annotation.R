@@ -76,27 +76,15 @@ expr.crm.mats=sapply(simplify=F,crm.annotations,function(region){
 })
 
 
-###
-reg=wideregion
-windowsize=500
-chrs.keep=seqnames(si)
-cage=get(data)[1:2]
-##
-
-str(expr.crm.mats)
 
 
 save(expr.crm.mats,file = 'data/objects/expr.crm.mats.object.R')
 
 
-########################################################################################
-#Now collect 
-
-genes.gr$geneDensity = getGeneDensity(genes.gr,w=200000)
-
-
 save(transcripts.gr,genes.gr,tss.gr,file='data/objects/scored.annotation.object.R')
 load('data/objects/scored.annotation.object.R')
+load('data/objects/expr.mats.object.R')
+load('data/objects/expr.crm.mats.object.R')
 
 
 
@@ -128,7 +116,7 @@ crm8008.gr$H3K27ac   <-overlapsAny(crm8008.gr,list(chrompeaks.modencode[['K27ac_
 crm8008.gr$H3K79me3   <-overlapsAny(crm8008.gr,list(chrompeaks[['K79me3_4-6h']],chrompeaks[['K79me3_6-8h']]),maxgap=50)
 crm8008.gr$H3K36me3  <-overlapsAny(crm8008.gr,list(chrompeaks[['K36me3_4-6h']],chrompeaks[['K36me3_6-8h']]),maxgap=50)
 crm8008.gr$polII          <-overlapsAny(crm8008.gr,list(chrompeaks[['PolII_4-6h']],chrompeaks[['PolII_6-8h']]),maxgap=50)
-crm8008.gr$intset=crm8008.gr$intergenic & !crm8008.gr$H3K4me3
+crm8008.gr$intset = crm8008.gr$intergenic & !crm8008.gr$H3K4me3
 
 #columns describind overlap with peak
 cad3.gr$H3K4me3  <-overlapsAny(cad3.gr,list(chrompeaks.modencode[['K4me3_4-8h']], chrompeaks[['K4me3_4-6h']] ,chrompeaks[['K4me3_6-8h']]),maxgap=50) 
@@ -137,7 +125,7 @@ cad3.gr$H3K27ac   <-overlapsAny(cad3.gr,list(chrompeaks.modencode[['K27ac_4-8h']
 cad3.gr$H3K79me3   <-overlapsAny(cad3.gr,list(chrompeaks[['K79me3_4-6h']],chrompeaks[['K79me3_6-8h']]),maxgap=50)
 cad3.gr$H3K36me3  <-overlapsAny(cad3.gr,list(chrompeaks[['K36me3_4-6h']],chrompeaks[['K36me3_6-8h']]),maxgap=50)
 cad3.gr$polII          <-overlapsAny(cad3.gr,list(chrompeaks[['PolII_4-6h']],chrompeaks[['PolII_6-8h']]),maxgap=50)
-cad3.gr$intset=cad3.gr$intergenic & !cad3.gr$H3K4me3
+cad3.gr$intset = cad3.gr$intergenic & !cad3.gr$H3K4me3
 cad3.gr$pos <- cad3.gr$active68 %in% T & cad3.gr$intergenic 
 cad3.gr$neg <- cad3.gr$inactive68 %in% T & cad3.gr$intergenic & !cad3.gr$GJ & !cad3.gr$polII
 
@@ -151,18 +139,21 @@ tffile.df<-data.frame(tfname=tffiles.tfnames,tp=tffiles.tps,file=tffiles)
 tfgrlist<-sapply(simplify=F,as.character(unique(tffile.df$tp)),function(tp){
   sapply(simplify=F,as.character(unique(tffile.df$tfname)),function(tfname){
     if(!any( tffile.df$tp==tp & tffile.df$tfname==tfname)){return(NULL)}
-    
     gr<-import(as.character(tffile.df$file[tffile.df$tp==tp & tffile.df$tfname==tfname]),asRangedData=F)
     
   })
 })
 save(tfgrlist,file='data/objects/tfgrlist.object.R')
+
 #now let's go through our 6-8 hour set and add the overlap info for the tfs at various timepoints
 #for our tf,tp, do countoverlaps four our crm8008.gr
 tmp<-sapply(simplify=F,as.character(unique(tffile.df$tp)),function(tp){
   sapply(simplify=F,as.character(unique(tffile.df$tfname)),function(tf){
     if(is.null(tfgrlist[[tp]][[tf]])){return(NULL)}   
+    mcols(crm8008.gr)[[paste(tf,tp,sep='_')]]<<-NULL
+    mcols(cad3.gr)[[paste(tf,tp,sep='_')]] <<- NULL
     mcols(crm8008.gr)[[paste(tf,tp,sep='_')]]<<-countOverlaps(crm8008.gr,tfgrlist[[tp]][[tf]])>0 
+    mcols(cad3.gr)[[paste(tf,tp,sep='_')]]<<-countOverlaps(cad3.gr,tfgrlist[[tp]][[tf]])>0 
     NULL
   })
 }) 
@@ -347,8 +338,8 @@ for_testing.gr = crm8008.gr[ crm8008.gr$abovecadfullcut & crm8008.gr$in.tf.pos ]
 for_testing.gr = for_testing.gr[ order(decreasing=T,for_testing.gr$cagesum.68)]
 for_testing.gr$startmotif.overlap
 for_testing.gr$name = paste0('ex',1:length(for_testing.gr),'_eRNA_crm')
-export(for_testing.gr,'olga_eRNA_test_crms.bed')
-write.csv(as.data.frame(mcols(for_testing.gr)),row.names=F,quote=F,file='olga_eRNA_test_crms.annotation.csv')
+export(for_testing.gr,'/g/furlong/project/24_TSSCAGE/crm_testing//olga_eRNA_test_crms.bed')
+write.csv(as.data.frame(mcols(for_testing.gr)),row.names=F,quote=F,file='/g/furlong/project/24_TSSCAGE/crm_testing//olga_eRNA_test_crms.annotation.csv')
 
 
 
@@ -360,24 +351,22 @@ cadfor_testing.gr = cad3.gr[ cad3.gr$abovecadfullcut & cad3.gr$intergenic & !cad
 cadfor_testing.gr = cadfor_testing.gr[ order(decreasing=T,cadfor_testing.gr$cagesum.68)]
 cadfor_testing.gr$startmotif.overlap
 cadfor_testing.gr$name = paste0('ex',1:length(cadfor_testing.gr),'_cad_eRNA_crm')
-export(cadfor_testing.gr,'olga_eRNA_test_cad_crms.bed')
+export(cadfor_testing.gr,'/g/furlong/project/24_TSSCAGE/crm_testing//olga_eRNA_test_cad_crms.bed')
 tab=mcols(cadfor_testing.gr)
 tab[,2] = gsub(' ','_',x=tab[,2])
-write.table(as.data.frame(tab),sep='\t',row.names=F,col.names=T,quote=F,file='olga_eRNA_test_cad_crms.annotation.txt')
-read.table('olga_eRNA_test_cad_crms.annotation.txt',sep='\t')
-write.(as.data.frame(tab),sep='\t',row.names=F,col.names=F,quote=F,file='olga_eRNA_test_cad_crms.annotation.csv')
-read.table('olga_eRNA_test_cad_crms.annotation.csv',sep='\t')
+write.table(as.data.frame(tab),sep='\t',row.names=F,col.names=T,quote=F,file='/g/furlong/project/24_TSSCAGE/crm_testing//olga_eRNA_test_cad_crms.annotation.txt')
+read.table('/g/furlong/project/24_TSSCAGE/crm_testing//olga_eRNA_test_cad_crms.annotation.txt',sep='\t')
 
 
-#Now let's pick some negatives for the 8008
+#Now let's pick some negatives for the 8008'
 crm8008.gr$startmotif.overlap = motif.overlap$crm8008.gr
 crm8008.gr$any.promotor.motifs = apply(crm8008.gr$startmotif.overlap,1,any)
 neg_examples_8008.gr = crm8008.gr[ !crm8008.gr$abovecadfullcut & crm8008.gr$in.tf.pos & crm8008.gr$H3K27ac  ]
 neg_examples_8008.gr = neg_examples_8008.gr[ order(decreasing=F,neg_examples_8008.gr$cagesum.68)]
 neg_examples_8008.gr$startmotif.overlap
 neg_examples_8008.gr$name = paste0('anex',1:length(neg_examples_8008.gr),'_eRNA_crm')
-export(neg_examples_8008.gr,'olga_neg_eRNA_test_crms.bed')
-write.csv(as.data.frame(mcols(neg_examples_8008.gr)),row.names=F,quote=F,file='olga_neg_eRNA_test_crms.annotation.csv')
+export(neg_examples_8008.gr,'/g/furlong/project/24_TSSCAGE/crm_testing//olga_neg_eRNA_test_crms.bed')
+write.csv(as.data.frame(mcols(neg_examples_8008.gr)),row.names=F,quote=F,file='/g/furlong/project/24_TSSCAGE/crm_testing//olga_neg_eRNA_test_crms.annotation.csv')
 
 #and negatives for the CAD
 cad3.gr$startmotif.overlap = motif.overlap$cad3.gr
@@ -388,6 +377,9 @@ neg_examples_cad3.gr = cad3.gr[ !cad3.gr$abovecadfullcut & cad3.gr$active68 & ca
 neg_examples_cad3.gr = neg_examples_cad3.gr[ order(decreasing=F,neg_examples_cad3.gr$cagesum.68)]
 neg_examples_cad3.gr$startmotif.overlap
 neg_examples_cad3.gr$name = paste0('znex',1:length(neg_examples_cad3.gr),'_eRNA_cd')
-export(neg_examples_cad3.gr,'olga_neg_eRNA_test_cad.bed')
-write.csv(as.data.frame(mcols(neg_examples_cad3.gr)),row.names=F,quote=F,file='olga_neg_eRNA_test_cad.annotation.csv')
+export(neg_examples_cad3.gr,'/g/furlong/project/24_TSSCAGE/crm_testing//olga_neg_eRNA_test_cad.bed')
+# write.csv(as.data.frame(mcols()),row.names=F,quote=F,file='')
+tab=mcols(neg_examples_cad3.gr)
+tab[,2] = gsub(' ','_',x=tab[,2])
+write.table(as.data.frame(tab),sep='\t',row.names=F,col.names=T,quote=F,file='/g/furlong/project/24_TSSCAGE/crm_testing//olga_neg_eRNA_test_cad.annotation.txt')
 
