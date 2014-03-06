@@ -6,12 +6,12 @@ outfolder='/g/furlong/Harnett/TSS_CAGE_myfolder/analysis/mapfilterplnorm/'
 dir.create(outfolder,showWarnings=F)
 
 klowmaplim=1#minimum number of reads before we call a region as mapped
-klineallowance=0#number of lines that are allowed to be unmapped
+klineallowance=1#number of lines that are allowed to be unmapped
 #collect all the mappability info
 #collect list of mappability files
 filelist <- scan(pipe("du /g/furlong/project/24_TSSCAGE/analysis/MAPPABILITY/MAP_BIN/DNAmapRAL_* | awk '$1 > 1000000 {print $2}'"), what='char')
 #create template SRL with all zeroes
-mapsum <- coverage(GRanges(seqinfo=si)
+mapsum <- coverage(GRanges(seqinfo=si))
 linecount=0#counter
 for(i in (1:length(filelist))){
 	mmfile=filelist[[i]]
@@ -23,7 +23,7 @@ for(i in (1:length(filelist))){
 	mlist = as( mlist , 'SimpleRleList' )#
 	if(any(sum(mlist)==0)){next}#skip empty or nearly files
 	linecount=linecount+1#incrememnt counter
-	mlist=mlist>=lowmaplim#get logical Rle List
+	mlist=mlist>=klowmaplim#get logical Rle List
 	mapsum = mapsum + mlist#add this to our mapsum object
 	cat('.')
 }
@@ -41,5 +41,7 @@ test_that("the allmap object is correct",{
 #now save our allmap object
 save(allmap,file='data/objects/allmap.object.R')
 save(mapsum,file='data/objects/mapsum.object.R')
-export(allmap*1,'/g/furlong/Harnett/TSS_CAGE_myfolder/data/mappability.bw')
+save(allmap,file='/g/furlong/project/24_TSSCAGE/data/allmap.object.R')
+save(mapsum,file='/g/furlong/project/24_TSSCAGE/data/mapsum.object.R')
+export(a	llmap*1,'/g/furlong/Harnett/TSS_CAGE_myfolder/data/mappability.bw')
 

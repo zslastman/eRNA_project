@@ -141,6 +141,28 @@ save(cg,file='data/objects/cg.object.R')
 #load('data/objects/cg.object.R')
 #load('data/objects/accession.df.full.object.R')
 
+# Create boxplot
+# Density plot
+# Save plot as pdf
+pdf(file="fileName.pdf")
+plot(density(rnorm(100),na.rm=TRUE, data=dataName, legend=T, xlab="xLabel", ylab="yLabel", main="main label here")
+dev.off()
+
+# Save plot as pdf
+pdf(file="fileName.pdf")
+plotHere
+dev.off()
+# Save plot as pdf
+pdf(file="fileName.pdf")
+plotHere
+dev.off()
+
+# Create boxplot
+boxplot(DV~IV, data=dataName, horizontal=FALSE, legend=T, xlab="xLabel", ylab="yLabel", ylim=c(0,100), main="main label here")
+
+# Density plot
+plot(density(DV,na.rm=TRUE, data=dataName, legend=T, xlab="xLabel", ylab="yLabel", main="main label here")
+
 ################################################################################
 ## 5  do the power law normalization 
 fits<-sapply(accession.df$accession,function(acc){
