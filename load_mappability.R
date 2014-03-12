@@ -43,5 +43,5 @@ save(allmap,file='data/objects/allmap.object.R')
 save(mapsum,file='data/objects/mapsum.object.R')
 save(allmap,file='/g/furlong/project/24_TSSCAGE/data/allmap.object.R')
 save(mapsum,file='/g/furlong/project/24_TSSCAGE/data/mapsum.object.R')
-export(a	llmap*1,'/g/furlong/Harnett/TSS_CAGE_myfolder/data/mappability.bw')
+export(allmap*1,'/g/furlong/Harnett/TSS_CAGE_myfolder/data/mappability.bw')
 

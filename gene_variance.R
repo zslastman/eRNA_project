@@ -254,34 +254,6 @@ cutoffs=sapply(simplify=F,list(spec=var.spec,all=var.all),function(var.df){
 	})
 })
 
-#Basic plotting of variance data,shows bimodality
-pdf(file='analysis/gene_variance/VarDensity_stagespec_Densityplot.pdf')
-	
-	for(tp in var_decomp_tps){
-		transvar = var.spec$Trans[,tp]
-		cisvar = var.spec$Cis[,tp]
-		maintit = paste0(tp,' Distribution of Specific Cis/Trans Variance Scores')
-		print(qplot(geom='point',alpha=0.1,log='xy',y=transvar ,x=cisvar,main=maintit) +
-		geom_hline(yintercept=10^ cutoffs$spec[tp,'Trans'] )+
-		geom_vline(xintercept=10^ cutoffs$spec[tp,'Cis']) )
-	}
-	
-	for(tp in var_decomp_tps){
-		transvar = var.all$Trans[,tp]
-		cisvar = var.all$Cis[,tp]
-		maintit = paste0(tp,' Distribution of Total Cis/Trans Variance Scores')
-		print(qplot(geom='point',alpha=0.1,log='xy',y=transvar ,x=cisvar,main=maintit) +
-		geom_hline(yintercept=10^cutoffs$all[tp,'Trans'])+
-		geom_vline(xintercept=10^cutoffs$all[tp,'Cis']))
-	}
-
-	transvar = var.shared$Trans
-	cisvar = var.shared$Cis
-	maintit = paste0(' Distribution of shared Cis/Trans Variance Scores')
-	print(qplot(geom='point',alpha=0.1,log='xy',y=transvar ,x=cisvar,main=maintit))
-	qplot(geom='density',data=var.shared.m,log='x',x=as.numeric(value),color=factor(L1),main='Stage Specific Variance Sources')	
-	qplot(geom='density',data=var.spec.m,log='x',x=as.numeric(value),color=factor(L1),main='Shared Specific Variance Sources')
-dev.off()
 
 
 #create a logical column describing whether a gene is in the high or low variance group

@@ -63,10 +63,10 @@ names(bloom2ral) = linetable[,1]
 accession.df$line[ !accession.df$RAL ] = bloom2ral[accession.df$line[ !accession.df$RAL]]
 #now insert the correct line numbers into our accessions
 inds=!is.na(accession.df$sample)
-accession.df$acc[inds] = paste0('split',accession.df$sample[inds],'_',accession.df$line[inds],'_',accession.df$timepoint[inds],sep='')
+accession.df$accession[inds] = paste0('split',accession.df$sample[inds],'_',accession.df$line[inds],'_',accession.df$timepoint[inds],sep='')
 # #now mark out duplicates as reseqs
-dup=duplicated(accession.df$acc)
-accession.df[dup,]$acc = paste0(accession.df[dup,]$acc,'_reseq')
+dup=duplicated(accession.df$accession)
+accession.df[dup,]$accession = paste0(accession.df[dup,]$acc,'_reseq')
 accession.df[dup,]$reseq = T
 
 head(accession.df)
@@ -114,12 +114,12 @@ accession.df[accession.df$sample%in%c('18E','27H','13B','27B'),]
 ################################################################################
 #4 Read in the bam files as RLE lists --------------------------------------
 message('reading bam files....')
-cg<-mclapply(mc.cores=5,mc.cleanup=T,c(cage_bam_files),function(x)bam2coverage(x,doshift=F,doresize=T,stranded=T,fragment.length=1))
+cg<-mclapply(mc.cores=5,mc.cleanup=T,c(cage_bam_files)[1:2],function(x)bam2coverage(x,doshift=F,doresize=T,stranded=T,fragment.length=1))
 # save(cg,file='data/objects/cg.object.R')
 #now for the mesodermal
 cg<-c(cg,mclapply(mc.cores=5,mc.cleanup=T,c(cage_bam_files.meso),function(x)bam2coverage(x,doshift=F,doresize=T,stranded=T,fragment.length=1)))
 #and name our Rle object appropriately
-names(cg) <-accession.df$accession 
+names(cg) <-accession.df$accession
 #create a third strand for each library with the other two summed
 for(acc in 1:length(cg)){cg[[acc]][['both']]<-cg[[acc]]$pos+cg[[acc]]$neg}
 #calculate size of  library
@@ -136,32 +136,12 @@ cg.mapfilt=mclapply(mc.cores=5,names(cg),function(acc){
     cg[[acc]][[s]]
   })
 })
+for(acc in 1:length(cg.mapfilt)){cg.mapfilt[[acc]][['both']]<-cg.mapfilt[[acc]]$pos+cg.mapfilt[[acc]]$neg}
+names(cg.mapfilt)=names(cg)
 save(cg.mapfilt,file='data/objects/cg.mapfilt.object.R')
 save(cg,file='data/objects/cg.object.R')
 #load('data/objects/cg.object.R')
 #load('data/objects/accession.df.full.object.R')
-
-# Create boxplot
-# Density plot
-# Save plot as pdf
-pdf(file="fileName.pdf")
-plot(density(rnorm(100),na.rm=TRUE, data=dataName, legend=T, xlab="xLabel", ylab="yLabel", main="main label here")
-dev.off()
-
-# Save plot as pdf
-pdf(file="fileName.pdf")
-plotHere
-dev.off()
-# Save plot as pdf
-pdf(file="fileName.pdf")
-plotHere
-dev.off()
-
-# Create boxplot
-boxplot(DV~IV, data=dataName, horizontal=FALSE, legend=T, xlab="xLabel", ylab="yLabel", ylim=c(0,100), main="main label here")
-
-# Density plot
-plot(density(DV,na.rm=TRUE, data=dataName, legend=T, xlab="xLabel", ylab="yLabel", main="main label here")
 
 ################################################################################
 ## 5  do the power law normalization 
@@ -184,7 +164,8 @@ cg.pl<-mapply(SIMPLIFY=F,names(cg),accession.df$alpha,accession.df$offset,FUN=fu
   })
 })
 for(acc in names(cg.pl)){cg.pl[[acc]][['both']]<-cg.pl[[acc]]$pos+cg.pl[[acc]]$neg}
-names(cg.pl)<-accession.df$acc
+names(cg.pl)<-accession.df$accession
+
 save(cg.pl,file='data/objects/cg.pl.object.R')
 #and also the pr-map filtered stuff
 cg.mapfilt.pl<-mapply(SIMPLIFY=F,names(cg.mapfilt),accession.df$alpha,accession.df$offset,FUN=function(acc,alpha,offset){
@@ -193,57 +174,54 @@ cg.mapfilt.pl<-mapply(SIMPLIFY=F,names(cg.mapfilt),accession.df$alpha,accession.
   })
 })
 for(acc in names(cg.mapfilt.pl)){cg.mapfilt.pl[[acc]][['both']]<-cg.mapfilt.pl[[acc]]$pos+cg.mapfilt.pl[[acc]]$neg}
-names(cg.mapfilt.pl)<-accession.df$acc
+names(cg.mapfilt.pl)<-accession.df$accession
 save(cg.mapfilt.pl,file='data/objects/cg.mapfilt.pl.object.R')
 
+
+################################################################################
+#6 create a summed alltags object for each timepoint
 ################################################################################
 
-accession.df$accession %in% names(cg.pl)
-accession.df$acc%in% names(cg.pl)
-
-splitaccs=with(accession.df,split(acc,paste0(timepoint,tissue)))
-splitaccs[[3]] %in% names(cg.pl)
-
-
-#6 create a summed alltags object for each timepoint
 message('summing cage tags')
 #split our accs into a list of grouped libraries
 splitaccs=with(accession.df,split(accession,paste0(timepoint,tissue)))
+names(splitaccs) =paste0('tp',names(splitaccs))#leading numbers in names cause problems
 #now use this list to sum up the libraries
-alltaglist=mclapply(mc.cores=4,splitaccs,function(accs){
+allcage=mclapply(mc.cores=4,splitaccs,function(accs){
   alltags=list(
-      pos=Reduce('+',sapply(cg[[acc]],'[[','pos')),
-      neg=Reduce('+',sapply(cg[[acc]],'[[','neg'))
+      pos=Reduce('+',sapply(cg[accs],'[[','pos')),
+      neg=Reduce('+',sapply(cg[accs],'[[','neg'))
     )
   alltags$both=alltags$pos+alltags$neg#and add a both rle for each one.
   alltags
 })
 #export bigwigs for these
-for(set in names(alltaglist)){
-    export(alltaglist[[set]]$pos,paste0('/g/furlong/Harnett/TSS_CAGE_myfolder/data/solexa/wig/allcage.',set,'.pos.bw'))
-    export(alltaglist[[set]]$neg,paste0('/g/furlong/Harnett/TSS_CAGE_myfolder/data/solexa/wig/allcage.',set,'.neg.bw'))
+for(set in names(allcage)){
+    export(allcage[[set]]$pos,paste0('/g/furlong/Harnett/TSS_CAGE_myfolder/data/solexa/wig/allcage.',set,'.pos.bw'))
+    export(allcage[[set]]$neg,paste0('/g/furlong/Harnett/TSS_CAGE_myfolder/data/solexa/wig/allcage.',set,'.neg.bw'))
 }
 #Also one which just has the sum of ALL sites
-save(alltaglist,file='data/objects/alltaglist.object.R')
+save(allcage,file='data/objects/allcage.object.R')
 ##And for the pl normalized 
 #now use this list to sum up the libraries
-alltaglist.pl=mclapply(mc.cores=4,splitaccs,function(accs){
+allcage.pl=mclapply(mc.cores=4,splitaccs,function(accs){
   alltags=list(
       pos= Reduce('+',sapply(cg.pl[accs],'[[','pos')) ,
-      neg=Reduce('+',sapply(cg.pl[accs],'[[','neg'))
+      neg=Reduce('+',sapply(cg.pl[accs][1:2],'[[','neg'))
     )
   alltags$both=alltags$pos+alltags$neg#and add a both rle for each one.
   alltags = lapply(alltags,'/',length(accs))
 })
+
 #export bigwigs for these
-for(set in names(alltaglist.pl)){
-    export( alltaglist.pl[[set]]$pos,paste0('/g/furlong/Harnett/TSS_CAGE_myfolder/data/solexa/wig/allcage.',set,'.pl.pos.bw'))
-    export(alltaglist.pl[[set]]$neg,paste0('/g/furlong/Harnett/TSS_CAGE_myfolder/data/solexa/wig/allcage.',set,'.pl.neg.bw'))
-    export(alltaglist.pl[[set]]$both,paste0('/g/furlong/Harnett/TSS_CAGE_myfolder/data/solexa/wig/allcage.',set,'.pl.both.bw'))
+for(set in names(allcage.pl)){
+    export( allcage.pl[[set]]$pos,paste0('/g/furlong/Harnett/TSS_CAGE_myfolder/data/solexa/wig/allcage.',set,'.pl.pos.bw'))
+    export(allcage.pl[[set]]$neg,paste0('/g/furlong/Harnett/TSS_CAGE_myfolder/data/solexa/wig/allcage.',set,'.pl.neg.bw'))
+    export(allcage.pl[[set]]$both,paste0('/g/furlong/Harnett/TSS_CAGE_myfolder/data/solexa/wig/allcage.',set,'.pl.both.bw'))
 
 }
 #Also one which just has the sum of ALL sites
-save(alltaglist.pl,file='data/objects/alltaglist.pl.object.R')
+save(allcage.pl,file='data/objects/allcage.pl.object.R')
 
 
 
@@ -252,7 +230,7 @@ save(alltaglist.pl,file='data/objects/alltaglist.pl.object.R')
 #now create lists, but 
 cg.mapfilt.merge=cg.mapfilt
 message('CAGE Rle objects calculated, now summing reseqs')
-reseqs<-accession.df$acc[grepl(accession.df$acc,pattern='reseq')]
+reseqs<-accession.df$accession[grepl(accession.df$accession,pattern='reseq')]
 for(reseq in reseqs){
   orig<-gsub(reseq,pattern='_reseq',replacement='')
   cg.mapfilt.merge[[orig]]$pos<-cg.mapfilt.merge[[orig]]$pos+cg.mapfilt.merge[[reseq]]$pos

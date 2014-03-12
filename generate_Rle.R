@@ -184,7 +184,7 @@ message('summing cage tags')
 #split our accs into a list of grouped libraries
 splitaccs=with(accession.df,split(accession,paste0(timepoint,tissue)))
 #now use this list to sum up the libraries
-alltaglist=mclapply(mc.cores=4,splitaccs,function(accs){
+allcage=mclapply(mc.cores=4,splitaccs,function(accs){
   accs=accs
   cg.pl=cg.pl[accs]
   alltags=list(
@@ -195,12 +195,12 @@ alltaglist=mclapply(mc.cores=4,splitaccs,function(accs){
   alltags
 })
 #export bigwigs for these
-for(set in names(alltaglist)){
-    export(alltaglist[[set]]$pos,paste0('/g/furlong/Harnett/TSS_CAGE_myfolder/data/solexa/wig/allcage.',set,'.pl.pos.bw'))
-    export(alltaglist[[set]]$neg,paste0('/g/furlong/Harnett/TSS_CAGE_myfolder/data/solexa/wig/allcage.',set,'.pl.neg.bw'))
+for(set in names(allcage)){
+    export(allcage[[set]]$pos,paste0('/g/furlong/Harnett/TSS_CAGE_myfolder/data/solexa/wig/allcage.',set,'.pl.pos.bw'))
+    export(allcage[[set]]$neg,paste0('/g/furlong/Harnett/TSS_CAGE_myfolder/data/solexa/wig/allcage.',set,'.pl.neg.bw'))
 }
 #Also one which just has the sum of ALL sites
-save(alltaglist,file='data/objects/alltaglist.object.R')
+save(allcage,file='data/objects/allcage.object.R')
 
 ################################################################################
 ##7now create rles with our replciates and reseqs merged

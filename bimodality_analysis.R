@@ -21,14 +21,36 @@ dir.create(outfolder,showWarnings=F)
 #############################################################################
 #TSS cage score by strand
 #############################################################################
-posscores = unlist(viewSums(GRViews(gr=tss.gr,allcage$tp68embryo$pos)))
-negscores = unlist(viewSums(GRViews(gr=tss.gr,allcage$tp68embryo$neg)))
+tss.gr = tss.gr[!duplicated(tss.gr)]
+# posscores = GRViewsums(resize(tss.gr,width=500,fix='center'),rle=allcage$tp68hembryo$pos)
+# negscores = GRViewsums(resize(tss.gr,width=500,fix='center'),rle=allcage$tp68hembryo$neg)
+posscores = GRViewsums(resize(tss.gr,width=500,fix='center'),rle=allcage$tp68hembryo$pos)
+negscores = GRViewsums(resize(tss.gr,width=500,fix='center'),rle=allcage$tp68hembryo$neg)
 posgreater = posscores > negscores
 domscores = ifelse(posgreater, posscores, negscores)
 minorscores = ifelse(!posgreater, posscores, negscores)
-getBim
+logcagetotal=log10(domscores+minorscores+1)
+#logcagetotal=logcagetotal[is.finite(logcagetotal)]
+for(i in 1:10){ try({cagecutoff=getBimodalCutoff(logcagetotal,2,lower = -1,upper=10)} ) }
 
+posscores.meso = GRViewsums(resize(tss.gr,width=500,fix='center'),rle=allcage$tp68hmeso$pos)
+negscores.meso = GRViewsums(resize(tss.gr,width=500,fix='center'),rle=allcage$tp68hmeso$neg)
+posgreater.meso = posscores.meso > negscores.meso
+domscores.meso = ifelse(posgreater.meso, posscores.meso, negscores.meso)
+minorscores.meso = ifelse(!posgreater.meso, posscores.meso, negscores.meso)
+logcagetotal.meso=log10(domscores.meso+minorscores.meso+1)
+
+# Density plot
+plot(density(logcagetotal,na.rm=TRUE, data=dataName, legend=T, xlab="xLabel", ylab="yLabel", main="Total Cage Tag density on TSS - Embryo 68h"))
+plot(density(logcagetotal.meso,na.rm=TRUE, data=dataName, legend=T, xlab="xLabel", ylab="yLabel", main="Total Cage Tag density on TSS - Meso 68h"))
+plot(density(domscores.meso,na.rm=TRUE, data=dataName, legend=T, xlab="xLabel", ylab="yLabel", main="Total Cage Tag density on TSS - Dominant strand 68h meso"))
+plot(density(negscores.meso,na.rm=TRUE, data=dataName, legend=T, xlab="xLabel", ylab="yLabel", main="Total Cage Tag density on TSS - weak strand 68h meso"))
+
+
+abline(v=cagecutoff)
 #Now use a bimodality cutoff on the total expression to pick expressed and nonexpressed genes.
+activegenes = domscores+minorscores > cagecutoff
+
 
 
 #############################################################################
@@ -42,7 +64,12 @@ tss.gr$H3K79me3 <-overlapsAny(tss.gr,list(chrompeaks[['K79me3_4-6h']],chrompeaks
 tss.gr$H3K36me3 <-overlapsAny(tss.gr,list(chrompeaks[['K36me3_4-6h']],chrompeaks[['K36me3_6-8h']]),maxgap=50)
 tss.gr$polII    <-overlapsAny(tss.gr,list(chrompeaks[['PolII_4-6h']],chrompeaks[['PolII_6-8h']]),maxgap=50)
 #matrix of chromatin data
-tss.chrom.mat<-sapply(chrom.rles.rpgc.sub.merge,function(chrom.rle){unlist(viewMeans(Views(chrom.rle,as(crm8008.gr,'RangesList'))))})
+tss.chrom.mat<-sapply(chrom.rles.rpgc.sub.merge,function(chrom.rle){unlist(viewMeans(Views(chrom.rle,as(tss.gr,'RangesList'))))})
+tss.mod.chrom.mat<-sapply(chrom.rles.modencode,function(chrom.rle){unlist(viewMeans(Views(chrom.rle,as(tss.gr,'RangesList'))))})
+
+
+
+
 
 #############################################################################
 #Graphs showing Data on H3K4me3 peak present
@@ -50,8 +77,19 @@ tss.chrom.mat<-sapply(chrom.rles.rpgc.sub.merge,function(chrom.rle){unlist(viewM
 dir.create('analysis/bimodality_analysis')
 #Scatterplot showing both strands of (bimodality)
 pdf(paste0(outfolder,'/','Dom_vs_Min.heatscatter.pdf'))
-heatscatter(x= log10( domscores ) ,y= log10( minorscores ) ,log='',main='Heatmap of Main vs Minor Strand for all TSS at 68 Hours\n Whole Embryo Cage',xlab = 'Log10 Dominant Strand Cage' , ylab = 'Log10 Negative Strand Cage')
+heatscatter(cor=F,x= log10( domscores ) ,y= log10( minorscores ) ,log='',main='Heatmap of Main vs Minor Strand for all TSS at 68 Hours\n Whole Embryo Cage',xlab = 'Log10 Dominant Strand Cage' , ylab = 'Log10 Minor Strand Cage')
 dev.off()
+
+
+
+pdf(paste0(outfolder,'/','Dom_vs_Min.heatscatter.pdf'))
+heatscatter(cor=F,x= log10( domscores.meso ) ,y= log10( minorscores.meso ) ,log='',main='Heatmap of Main vs Minor Strand for all TSS at 68 Hours\n Whole Mesodermal Cage',xlab = 'Log10 Dominant Strand Cage' , ylab = 'Log10 Minor Strand Cage')
+dev.off()
+
+mean( log10( domscores.meso ) > 2 & log10( minorscores.meso ) >2 ) * 100
+mean( log10( domscores ) > 3 & log10( minorscores ) >3 ) * 100
+
+
 
 #Density plot asking if we have seperate population of bimodal genes and splitting if so
 # Density plot

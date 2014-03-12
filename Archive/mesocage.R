@@ -35,13 +35,13 @@ qplot(crm24,crm68,log='xy')
 
 load('data/objects/all.cage.unprocessed.object.R')
 load(file.tss)
-load('/g/furlong/Harnett/TSS_CAGE_myfolder/data/objects/alltaglist.object.R')
+load('/g/furlong/Harnett/TSS_CAGE_myfolder/data/objects/allcage.object.R')
 load('data/objects/accession.df.full.object.R')
 tss.gr=sort(tss.gr)
 
 
-mesosums=unlist(viewSums(GRViews(alltaglist[['meso68h']]$both,tss.gr)))
-embsums=unlist(viewSums(GRViews(alltaglist[['embryo68h']]$both,tss.gr)))
+mesosums=unlist(viewSums(GRViews(allcage[['meso68h']]$both,tss.gr)))
+embsums=unlist(viewSums(GRViews(allcage[['embryo68h']]$both,tss.gr)))
 
 
 # mesosums=mesosums[mesosums>quantile(mesosums,0.1)]

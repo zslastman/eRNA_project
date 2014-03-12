@@ -87,9 +87,9 @@ rm(cg.qn)
 
 
 #e)qunatile normalization but counting sites with reads in ANY library
-load('/g/furlong/Harnett/TSS_CAGE_myfolder/data/objects/alltaglist.object.R')
+load('/g/furlong/Harnett/TSS_CAGE_myfolder/data/objects/allcage.object.R')
 sites=sapply(c('pos','neg'),function(st){
-	sites=lapply(alltaglist,'[[',st)
+	sites=lapply(allcage,'[[',st)
 	sites=sapply(sites,'>',0)
 	Reduce('|',sites)
 })#make pos/neg list 

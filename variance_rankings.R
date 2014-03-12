@@ -35,23 +35,18 @@ gene.sds=aggregate(pheno.m$value ,agbygene, sd )
 gene.means=aggregate(pheno.m$value ,agbygene, mean )
 gene.dev.sds=aggregate(pheno.m$value ,agbygenedev, sd )
 gene.dev.means=aggregate(pheno.m$value ,agbygenedev, mean )
-head(gene.dev.sds)
 #and also get the means for each timestage
-sumord = match(rownames(V),gene.sds$geneID)#order genes origianlly in 
-sumord = sumord[!is.na(sumord)]
-all(gene.sds$geneID[sumord]==rownames(V))
 meanstagetable = dcast(gene.dev.means,geneID ~ dev,value.var='x')
 sdstagetable = dcast(gene.dev.sds,geneID ~ dev,value.var='x')#for rescaling to within timestage sd
-head(sdstagetable)
 inc.dev.sds = gene.sds$x[sumord]#for unscaling the cross timestage sd
 inc.dev.means = gene.means$x[sumord]#for unscaling the cross timestage sd
-identical( gene.sds$geneID[sumord],rownames(V)[])#for unscaling the cross timestage sd
 #now match the peaks to actual genes.
 dn=distanceToNearest(h5sumgenes.gr,genes.gr)
 h5sumgenes.gr$Gene=genes.gr[dn$subjectHits]$id
 h5sumgenes.gr$Gene[dn$distance>500] <- NA
-
-
+#indexes for re-ordering the data h5 genes to the UNSORTED summary h5 order - 
+sumord = match(rownames(V),gene.sds$geneID)#order genes origianlly in 
+sumord = sumord[!is.na(sumord)]
 
 
 ####################################
@@ -124,16 +119,54 @@ var.all = setNames(nm=c('Cis','Trans','Noise'),
 )
 #now, we need to scale the variances by multiplying them by the sd for all stages, and then dividing by the
 #sd for that stage
+var.all.rescaled = var.all
 for(s in 1:length(var.all) ){
   for(tp in colnames(var.all[[s]]))  {
-    var.all[[s]][,tp] = (var.all[[s]][,tp] * gene.sds[sumord,]$x ) / sdstagetable[sumord,tp]
+    var.all.rescaled[[s]][,tp] = (var.all[[s]][,tp] * gene.sds[sumord,]$x ) / sdstagetable[sumord,tp]
   }
+}
+####The variance data is bimodal - set cutoffs on it to define two groups
+cutoffs=sapply(simplify=F,list(spec=var.spec,all=var.all),function(var.df){
+  cutoffs=sapply(c('Cis','Trans'),function(ct){
+    sapply(var_decomp_tps,function(tp){
+      x=lognz(var.df[[ct]][,tp])
+      #we need to iterate the cutoff fucntion, it fails sometimes
+      for(i in 1:10){ try({cutoff = getBimodalCutoff( x,knum=2,proba=0.5)})} 
+      cutoff
+    })
+  })
+})
+
+var.spec.m = melt(var.spec)
+var.shared.m = melt(var.shared)
+var.all.m = melt(var.all)
+head(var.spec.m)
+expect_true(all(var.spec[[1]]>=0))
+
+#create a logical column describing whether a gene is in the high or low variance group
+var.spec.m$abovecut <- F
+for(ct in c('Cis','Trans')){
+  setinds = var.spec.m$L1==ct
+  time=as.character(var.spec.m$Var2)
+  var.spec.m$abovecut[setinds] = log10(var.spec.m$value[setinds]) > cutoffs$spec[time,ct]
+}
+#create a logical column describing whether a gene is in the high or low variance group
+var.all.m$abovecut <- F
+for(ct in c('Cis','Trans')){
+  setinds = var.all.m$L1==ct
+  time=as.character(var.all.m$Var2)
+  var.all.m$abovecut[setinds] = log10(var.all.m$value[setinds]) > cutoffs$all[time,ct]
 }
 
 
 
+
+
+
+
+
 ###############################################################################
-#Now calculate the technical noise using the information from replicates and limma
+#Now fit a linear model to the data using Limma
 ##################################################
 #Do this with only a selection of the most expressed genes.
 #Genes which have reasonably high expression at all timestages
@@ -152,13 +185,20 @@ colnames(peakcounts.mapfilt)=my.df$accession
 row.names(peakcounts.mapfilt)=mypeaks$id#Get the expression matrix for these
 save(peakcounts.mapfilt,file='data/objects/peakcounts.mapfilt.object.R')
 
-load('data/objects/cg.pl.object.R')
-peakcounts.nomapfilt=getStrandedExprMat(gr=mypeaks,cg.pl[my.df$accession])
-colnames(peakcounts.nomapfilt)=my.df$accession
-row.names(peakcounts.nomapfilt)=mypeaks$id#Get the expression matrix for these
-save(peakcounts.nomapfilt,file='data/objects/peakcounts.object.R')
+# load('data/objects/cg.pl.object.R')
+# peakcounts.nomapfilt=getStrandedExprMat(gr=mypeaks,cg.pl[my.df$accession])
+# colnames(peakcounts.nomapfilt)=my.df$accession
+# row.names(peakcounts.nomapfilt)=mypeaks$id#Get the expression matrix for these
+# save(peakcounts.nomapfilt,file='data/objects/peakcounts.object.R')
+
+# peakcounts=getStrandedExprMat(gr=mypeaks,cg[my.df$accession])
+# colnames(peakcounts)=my.df$accession
+# row.names(peakcounts)=mypeaks$id#Get the expression matrix for these
+# save(peakcounts,file='data/objects/peakcounts.object.R')
 
 peakcounts = peakcounts.mapfilt
+expect_is(peakcounts,'matrix')
+
 
 cage.tps = accession.df$timepoint[ match(colnames(peakcounts),accession.df$accession)]
 cage.tpsum=sapply(unique(cage.tps),function(tp){rowSums(peakcounts[,cage.tps==tp])})
@@ -198,7 +238,21 @@ fit <- lmFit(v,design)
 vfit.scaled <- eBayes(fit,trend=T)
 #this design matrix is too big I think. 
 
+#Fit a random effects model
+require(nlme)
+n=20
+inds=order(rowSums(peakcounts),decreasing=T)[1:n]#best rows of peakcounts
+peakcounts.filt = peakcounts[inds,]
+peakcounts.filt.m = melt(peakcounts.filt)
+colnames(peakcounts.filt.m) = c('Gene','accession','value')
+peakcounts.filt.m$collection = factor(reptable$collection[match(peakcounts.filt.m$accession,reptable$accession)])
+peakcounts.filt.m$line = factor(reptable$line[match(peakcounts.filt.m$accession,reptable$accession)])
+peakcounts.filt.m$value = as.numeric(as.character( peakcounts.filt.m$value))
 
+head(peakcounts.filt)
+head(peakcounts.filt.m,n=100)
+lmfit=lm(data=peakcounts.filt.m,value ~ Gene * line)
+lmefit = lme(data=peakcounts.filt.m,fixed = value ~ Gene * line , random = ~ collection*Gene)
 
 
 ###############################################################################
@@ -234,16 +288,63 @@ dev.off()
 ###############################################################################
 #plots showing summary of input and output from variance Decomp
 ###############################################################################
-#Calculate the proportion of variation which is genetic for each timepoint
 prop.genetic = (var.all$Cis+var.all$Trans) / var.all$Cis+var.all$Trans+var.all$Noise
 abs.genetic = var.all$Cis+var.all$Trans
-str(prop.genetic)
-pdf(paste0(outfolder,'/','hd5_input_output.pdf'))
-#summary of variance
-#all tps
+pdf( paste0(outfolder,'/','hd5_input_output.pdf') )
+#First - I should be able to calculate the proportion of the variance which is due to dev stages myself...
+#calculate variance amongst stages - approximately the variance between the means at each stage
+MyStageVar = setNames(nm= meanstagetable[,1] ,apply(meanstagetable[,-1],1,var) )
+#proportion vairance due to stages
+MyStageVar = MyStageVar / (gene.sds^2)
+#now get value in summary hdf5
+H5StageVar=as.vector(Venv)
+#and order the dataHDF5 stuff correctly
+MyStageVar = MyStageVar[ sumord ]
+#Compare values in scatterplot
+heatscatter(x= log10( MyStageVar ) ,y= log10( H5StageVar ) ,method='s',log='' ,main='Comparison of my estimated variance due to stages\n and the H5 estimate',xlab = 'Log10 MyStageVar' , ylab = 'Log10 H5StageVar')
+#done
+dev.off()
+#Now look at distribution of 
+
 #different tps and different sources
+#Basic plotting of variance data,shows bimodality
+pdf(file='analysis/gene_variance/VarDensity_stagespec_Densityplot.pdf')
+  
+  for(tp in var_decomp_tps){
+    transvar = var.spec$Trans[,tp]
+    cisvar = var.spec$Cis[,tp]
+    maintit = paste0(tp,' Distribution of Specific Cis/Trans Variance Scores')
+    print(qplot(geom='point',alpha=0.1,log='xy',y=transvar ,x=cisvar,main=maintit) +
+    geom_hline(yintercept=10^ cutoffs$spec[tp,'Trans'] )+
+    geom_vline(xintercept=10^ cutoffs$spec[tp,'Cis']) )
+  }
+  
+  for(tp in var_decomp_tps){
+    transvar = var.all$Trans[,tp]
+    cisvar = var.all$Cis[,tp]
+    maintit = paste0(tp,' Distribution of Total Cis/Trans Variance Scores')
+    print(qplot(geom='point',alpha=0.1,log='xy',y=transvar ,x=cisvar,main=maintit) +
+    geom_hline(yintercept=10^cutoffs$all[tp,'Trans'])+
+    geom_vline(xintercept=10^cutoffs$all[tp,'Cis']))
+  }
+
+  transvar = var.shared$Trans
+  cisvar = var.shared$Cis
+  maintit = paste0(' Distribution of shared Cis/Trans Variance Scores')
+  print(qplot(geom='point',alpha=0.1,log='xy',y=transvar ,x=cisvar,main=maintit))
+  qplot(geom='density',data=var.shared.m,log='x',x=as.numeric(value),color=factor(L1),main='Stage Specific Variance Sources') 
+  qplot(geom='density',data=var.spec.m,log='x',x=as.numeric(value),color=factor(L1),main='Shared Specific Variance Sources')
+dev.off()
+
 #mean vs variance
 #Proportions using cutoffs
+#What are the proportions of zeroes in each catagory?
+pdf('analysis/gene_variance/vardist_bar_violinplots.pdf')
+qplot(geom='violin',data=var.spec.m[var.spec.m$L1!='Noise',],color=L1,x=Var2,y=value,log='y',ylab="variance",xlab='Timepoint')
+qplot(geom='violin',data=var.shared.m[,],x=L1,y=value,log='y',ylab="variance")
+ggplot(var.spec[var.spec$abovecut==T,], aes(Var2,fill=Var2)) + geom_bar() +
+  facet_wrap(~ L1)
+dev.off()
 
 dev.off()
 
@@ -285,147 +386,6 @@ repped_coeffs = colnames(fitob$coeff)
 
 
 
-
-
-
-###############################################################################
-#Plots comparing individual features to our variances
-###############################################################################
-load('data/objects/scored.annotation.R')
-load('data/objects/tfgrlist.object.R')
-load('data/objects/motif.overlap.object.R')#get motif overlap
-load('data/objects/motifs.gr.object.R')
-load('data/objects/dnase.peaks.object.R')
-
-
-
-# functions for boxplot labelling
-give.n <- function(x){
-  return(c(y = median(x)*1.05, label = length(x))) 
-  # experiment with the multiplier to find the perfect position
-}
-mean.n <- function(x){
-  return(c(y = median(x)*0.97, label = round(mean(x),2))) 
-  # experiment with the multiplier to find the perfect position
-}
-
-genetic.vars = list(
-  'Proportional' = (var.all$Cis[,tp] + var.all$Trans[,tp]) / var.all$Noise[,tp],
-  'Cis' = var.all$Cis[,tp] ,
-  'Trans' = var.all$Trans[,tp] ,
-  'Genetic' = var.all$Cis[,tp] + var.all$Trans[,tp],
-  'Non developmental' = var.all$Cis[,tp] + var.all$Trans[,tp] + var.all$Noise[,tp],
-  'Limma' = apply(fit$coeff,1,sd)#limma only uses replicated ones anyway...
-  # 'Limma_replicated_only' = apply(fit$coeff[,repped_coeffs],1,sd)
-)
-windowsizes = c('50kb'=50000,'25kb'=25000,'12.5kb'=12500)
-
-gn = 'Limma'
-w=windowsizes[[2]]
-
-for(gn in names(genetic.vars)){
-genetic.var = genetic.vars[[gn]]
-
-
-pdf(paste0('analysis/variance_rankings/indiv_features_vs_Var_',gn,' w=',w,'_.pdf'))
-# pdf('analysis/variance_rankings/density_vs_variance_heatscatter.pdf')
-h5sumgenes.gr$genedensity50 = getGeneDensity(h5sumgenes.gr,genes=genes.gr,windowsize=w)
-heatscatter(x=h5sumgenes.gr$genedensity50,y=log10(genetic.var),main=paste0('Gene Density vs ',gn,' windowsize ',w),xlab='gene density',ylab=paste0('Log10',gn))
-# dev.off()
-# Nearby TF peaks
-h5sumgenes.gr$tfpeakdensity = rowSums(sapply( tfgrlist[['6-8']] , function(tfpeaks.gr){
-  getGeneDensity(h5sumgenes.gr,genes=tfpeaks.gr,windowsize=w)
-}))
-# pdf('analysis/variance_rankings/tfpeakdensity_vs_variance_heatscatter.pdf')
-heatscatter(x=h5sumgenes.gr$tfpeakdensity,y=log10(genetic.var),main=paste0('Local big5 TF peak density vs ',gn,' windowsize ',w),xlab='tf peak density',method='s',ylab=gn)
-# dev.off()
-# Nearby Dnase Peaks
-# pdf('analysis/variance_rankings/tfpeakdensity_vs_variance_heatscatter.pdf')
-# load('data/objects/dnase.peaks.object.R')
-h5sumgenes.gr$dnasepeakdensity = getGeneDensity(h5sumgenes.gr,genes=dnase.peaks,windowsize=w)
-heatscatter(x=h5sumgenes.gr$dnasepeakdensity,y=log10(genetic.var),main=paste0('Local Dnase Peak Density vs ',gn,' windowsize ',w),xlab='Dnase Peak density',method='s',ylab=gn)
-# dev.off()
-dev.off()
-
-allmotifs.gr<-import('/g/furlong/Harnett/TSS_CAGE_myfolder/data/fimo_out_JASPAR_CORE_insects_02/fimo.gff',asRangedData=F)
-allmotifs.gr = allmotifs.gr[countOverlaps(allmotifs.gr,dnase.peaks)>0]
-
-# Promotor Type
-gene.motif.overlap = matrix(0,ncol=ncol(motif.overlap$tss.gr),nrow=length(genes.gr))
-colnames(gene.motif.overlap) = colnames(motif.overlap$tss.gr)
-rownames(gene.motif.overlap) = genes.gr$id
-# the below code sums all tss for the gene
-for(i in length(tss.gr$Gene)){
-  tss.ov = motif.overlap$tss.gr[i,]#get the motifs overlapping that gene
-  gid = tss.gr$Gene[i]#get the corresponding gene
-  gene.motif.overlap[gid,]=gene.motif.overlap[gid,] + tss.ov
-}
-
-pdf(paste0('analysis/variance_rankings/motifs_vs_Var_',gn,' w=',w,'_.pdf'))
-
-#or just calculate overlap directly on the peaks....
-motifs=unique(motifs.gr$name)
-thresh=0.0001
-h5sumgenes.gr$motif.overlap=sapply(motifs,function(motif){
-      mots=motifs.gr[motifs.gr$name==motif & motifs.gr$pvalue < thresh]
-      countOverlaps(resize(h5sumgenes.gr,width=500,fix='center'),mots)
-})
-for(motif in motifs){
-h5sumgenes.gr$mot.overlap = h5sumgenes.gr$motif.overlap[ ,motif ] > 0 
-# qplot(geom='errorbar',log='y', y = genetic.var, x = h5sumgenes.gr$TATA.overlap , fill= h5sumgenes.gr$TATA.overlap )
-d=data.frame(motif=factor(h5sumgenes.gr$mot.overlap) , 'GeneticVariance' = genetic.var)
-print(ggplot(d, aes(factor(motif),GeneticVariance,color=motif)) +
-  stat_summary(fun.data='mean_cl_boot',geom='errorbar',size=4) +
-  stat_summary(fun.data = give.n, geom = "text", fun.y = median) +
-  ggtitle(paste0(motif,' presence vs ',gn)))
-  scale_y_continuous(limits=c(0,2))
-}
-
-dev.off()
-
-
-
-#could also skip tss with no expression, or just use the main one for each gene.
-#now show boxplots for various sets.
-expr.pattern = rep(NA,length(genes.gr))
-expr.pattern[genes.gr$endoderm] = 'endoderm'
-expr.pattern[genes.gr$mesoderm] = 'mesoderm'
-expr.pattern[genes.gr$ectoderm] = 'ectoderm'
-expr.pattern[genes.gr$just.ub] = 'ubiquitious'
-h5sumgenes.gr$expr.pattern = expr.pattern[match(h5sumgenes.gr$Gene,genes.gr$id)]
-
-pdf(paste0('analysis/variance_rankings/indivexpr_features_vs_Var_',gn,' w=',w,'_.pdf'))
-
-# Expression catagory (from BDGP)
-qplot(log = 'y', main = 'expression pattern vs. Genetic variability' ,
- x = h5sumgenes.gr$expr.pattern, fill = h5sumgenes.gr$expr.pattern, y = genetic.var, geom = 'Violin' )
-
-expr.tab=c(table(h5sumgenes.gr$expr.pattern),'NA'=sum(is.na(h5sumgenes.gr$expr.pattern)))
-expr.tab=data.frame(pattern=names(expr.tab),freq=expr.tab)
-
-d=data.frame('Pattern'=factor(h5sumgenes.gr$expr.pattern) , 'GeneticVariance' = genetic.var)
-
-print(
-ggplot(d, aes(factor(Pattern),GeneticVariance)) +
-  stat_summary(data=d,fun.data='mean_cl_boot',geom='errorbar',size=4, colour = c('yellow','red','orange','blue','black')) +
-  stat_summary(fun.data = give.n, geom = "text", fun.y = median) 
-)
-
-dev.off()
-
-}
-#Finally, take the number of motifs (any )
-
-#Now let's output files for Davids analysis suite.
-
-for(gn in names(genetic.vars)){
-  genetic.var = genetic.vars[[gn]]
-
-  hasID = !is.na(h5sumgenes.gr$Gene)
-  IDs = genes.gr[match(h5sumgenes.gr$Gene[hasID],genes.gr$id)]$acc
-  var.GOtab.df = data.frame(gene_ID = IDs, score = genetic.var[hasID])
-  write.table(var.GOtab.df[hasID,],file=paste0('analysis/GO_BDGP_analysis/go_var_table_',gn,'_w',w,'_.txt'),sep='\t',col.names=T,row.names=F,quote=F)
-}
 
 
 

@@ -48,6 +48,23 @@ pdf(file=paste0(outfolder,'/',"pctest.pdf"))
 plot(cumsum(res$sdev^2/sum(res$sdev^2))) #cumulative explained variance
 dev.off()
 
+install.packages('NMFN',lib='~/Harnett/R')
+install.packages('nmf',lib='~/Harnett/R')
+
+
+X <- matrix(1:12,3,4)
+z.mm <- NMFN::nnmf(X,3)
+
+#now on my data
+m.nmf = NMFN::nnmf(mat,2)
+m.nmf$H
+#This gives more intepretable factors, but also 
+
+install.packages("NMF")
+
+library(nmf)
+data(esGolub)
+esGolub
 
 
 

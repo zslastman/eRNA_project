@@ -5,9 +5,10 @@ expect_SRL<-function(x,s=si){
 	# This function tests a SimpleRLeList object to make sure it
 	# is correct
 	 expect_is(x,'SimpleRleList')
-	 expect_equal(names(x),seqnames(s))
-	 expect_equal(sapply(x,length),seqlengths(s))
+	 expect_equal(names(x),seqnames(si))
+	 expect_equal(sapply(x,length),seqlengths(si))
 	 expect_false(all(sum(x)==0))
+   NULL
 }
 
 
@@ -17,6 +18,7 @@ expect_GR<-function(x,s=si){
    expect_is(x,'GRanges')
    expect_identical(seqinfo(x),si)
    expect_false(length(x)==0)
+   NULL
 }
 
 #check we have a list of numeric matrices
@@ -24,33 +26,56 @@ expect_num_mat_list<-function(matlist){
   #recursively check structre, values not zero
   rapply(matlist,function(x){expect_true(identical(is(x),is(matrix(0))))})
   rapply(matlist,function(x){expect_false({all(x==0)})})
+  NULL
 }
+
+
+load('data/objects/cg.object.R')
+load('data/objects/cg.mapfilt.object.R')
+load('data/objects/cg.pl.object.R')
+load('data/objects/cg.mapfilt.pl.object.R')
+load('data/objects/accession.df.object.R')
+
+expect_is(cg[[1]]$neg,'SimpleRleList')
 
 #test the cage data
 test_that('Cage data read and processed correctly',{
   #The metadata
   expect_false(any(grepl(accession.df,pat='/'))) #no filenames unparsed
+  expect_false(any(duplicated(accession.df$accession)))
   #check data rle
-  expect_is(cg,'list')
-  expect_true(all(sapply(cg, function(x){names(x)==c('pos','neg','both')})))
-  expect_equal(length(cg),nrow(accession.df))
-  rapply(cg,f(expect_equal(x[[!allmap]],0)))
-  rapply(cg,expect_SRL)
-  rapply(cg,f(expect_true( runValue(x)[[1]][[2]]%%1 == 0 ))) #test for integerness
-  #check map filtering
-  expect_true(!all(sum(cg[[1]][[1]][!allmap])==0))#cg not filtered
-  expect_false(!all(sum(cg.mapfilt[[1]][[1]][!allmap])==0))#cg not filtered
-  #check power law
-  #check they have same structure, names
-  identical(rapply(cg,is,how='replace'),rapply(cg.pl,is,how='replace'))
-  #alphas should be in the 1.5 to 3 range
-  expect_true(all(accession.df$alpha > 1.4))
-  expect_true(all(accession.df$alpha < 3))
-  #
-  rapply(cg.pl,f(expect_true( runValue(x)[[1]][[2]]%%1 != 0 ))) #test for integerness
-  expect_true(!all(sum(cg.pl[[1]][[1]][!allmap])==0))#cg.pl not filtered
-  expect_false(!all(sum(cg.mapfilt.pl[[1]][[1]][!allmap])==0))#cg.mapfitl filtered
-  #check 
+  expect_is(cg,'list')#is a list
+  expect_true(all(sapply(cg, function(x){names(x)==c('pos','neg','both')})))#all three strands
+  expect_equal(length(cg),nrow(accession.df))#correct length
+  expect_identical(accession.df$accession,names(cg))#correct names
+  tmp= rapply(cg,expect_SRL)#right type of objects
+  tmp = rapply(cg,function(x){expect_true( runValue(x)[[1]][[2]]%%1 == 0 )}) #test for integerness
+  expect_false(any(duplicated(sapply(cg,f(sum(x[[1]][[1]]))))))#not duplicated
+  #mapfiltered object
+  expect_identical(names(cg.mapfilt),names(cg))#names okay
+  expect_true(all(sapply(cg.mapfilt, function(x){names(x)==c('pos','neg','both')})))#all strands
+  tmp = rapply(cg.mapfilt,function(x){ expect_true( all(all(x[!allmap]==0))) ;NULL})#mapfilter worked
+  #power law norm
+  expect_identical(names(cg.pl),names(cg))#names okay
+  expect_true(all(sapply(cg.pl, function(x){names(x)==c('pos','neg','both')})))#all strands
+  tmp = rapply(cg.pl,function(x){ expect_false( all(all(x[!allmap]==0)));NULL })#mapfilter not done yet
+  tmp = rapply(cg.pl[1:2],f(expect_true( any(runValue(x)[[1]][[2]]%%1 != 0)) )) #test for NOTintegerness
+  #mapfiltered , power law norm object
+  expect_identical(names(cg.mapfilt.pl),names(cg))#names okay
+  expect_true(all(sapply(cg.mapfilt.pl, function(x){names(x)==c('pos','neg','both')})))#all strands
+  tmp = rapply(cg.mapfilt.pl,function(x){ expect_true( all(all(x[!allmap]==0))) })#mapfilter worked
+  tmp = rapply(cg,f(expect_true( any(runValue(x)[[1]][[2]]%%1 != 0) ))) #test for NOTintegerness
+  #test the allcage object
+  splitaccs=with(accession.df,split(accession,paste0(timepoint,tissue)))
+  expect_equal(length(cg),length(splitacces))#correct length
+  expect_identical(names(allcage),names(splitaccs))#names okay
+  expect_true(all(sapply(allcage, function(x){names(x)==c('pos','neg','both')})))#all strands  
+  tmp = rapply(allcage,function(x){expect_true( runValue(x)[[1]][[2]]%%1 == 0 )}) #test for integerness
+  #nothing duplicated
+  expect_false(any(duplicated(sapply(cg.pl,f(sum(x[[1]][[1]]))))))
+  expect_false(any(duplicated(sapply(cg,f(sum(x[[1]][[1]]))))))
+  expect_false(any(duplicated(sapply(cg,f(sum(x[[1]][[1]]))))))
+
 }
 )
 
@@ -75,6 +100,9 @@ test_that('Tagseq data read and processed correctly',{
   #check 
 }
 )
+
+
+
 
 #test the annotation data
 test_that('Annotation data read and processed correctly',{
@@ -194,18 +222,18 @@ pdf('/g/furlong/Harnett/TSS_CAGE_myfolder/inspection_coverage_plot_tmp.pdf')
 actchr = 'chrX'
   actstart = 18101918 - 1000 
   actstop = 18102417 + 1000
-x = alltaglist.pl[['24hembryo']]$both
+x = allcage.pl[['24hembryo']]$both
 coverageplot(Views(x[[actchr]],actstart,actstop))
 dev.off()
 
 
 
-viewSums(GRViews(gr=cad3.gr[569],rle=alltaglist.pl[[2]]$both))
+viewSums(GRViews(gr=cad3.gr[569],rle=allcage.pl[[2]]$both))
 mean(expr.crm.mats$cad3.gr$cg.pl[569,accession.df$time=='24h'])
 
 
 coverageplot(Views(x[[actchr]],actstart,actstop))
-makeInspectionCovPlot(alltaglist.pl[[2]]$both)
+makeInspectionCovPlot(allcage.pl[[2]]$both)
 
 makeInspectionCovPlot(c.rna.seq[[1]])
 
@@ -231,10 +259,24 @@ makeGvizCovPlot<-function(x){
 # coverageplot(Views(tmp4[[1]][['chr2R']],18931631,18937849))
 # dev.off()
 
-
-
-
-
-
+#Testing Snippet
+test_that('Test peakcounts object',{
+  peakcounts
+  #test length of object
+  #test names of object
+  #type
+  expect_is(peakcounts,'matrix')
+  expect_true(is.numeric(peakcounts))
+  expect_false(is.character(peakcounts))
+  expect_false(is.factor(peakcounts))
+  expect_false(is.list(peakcounts))
+  #test values of object
+  expect_true( all(peakcounts != 0))
+  #test dimensions of object
+  expect_equal( dim(peakcounts) , matrix  )
+  expect_identical(colnames(  peakcounts),  accession.df$accession)
+  expect_identical(rownames(  peakcounts),  mypeaks$id)
+}
+)
 
 

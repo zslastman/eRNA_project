@@ -2,11 +2,13 @@
 # Functions for use in the eRNA/CAGE project ------------------------------
 # Author: Dermot Harnett --------------------------------------------------
 
+.libPaths( c( "~/Harnett/R", .libPaths()) )
+#install.packages('devtools',lib='~/Harnett/R',repos='http://cran.rstudio.com/')
 #source("http://bioconductor.org/biocLite.R")
 #biocLite(pkgs='chipseq',lib.loc='~/Harnett/R')
-#library(chipseq,lib.loc='~/Harnett/R/')
-#library(chipseq)
-.libPaths( c( "~/Harnett/R", .libPaths()) )
+#library(devtools)
+#devtools::install_github("hadley/pryr")
+library(pryr)
 library(GenomicRanges)
 library(multicore)
 library(rtracklayer)
@@ -21,7 +23,6 @@ library(ggplot2)
 library(reshape2)
 library(LSD)
 library(testthat)
-library(pryr)
 tps=c('tp24h','tp68h','tp1012h')
 
 
@@ -389,12 +390,14 @@ combinegrs<-function(grlist){
 
 # Carries out Views on a GRange object ------------------------------------
 GRViews<-function(rle,gr){
-  expect_SRL(rle)
+  expect_SRL(rle)#verify objects
   expect_GR(gr)
-  expect_identical(gr,sort(gr))
-  v=Views(rle[seqlevels(gr)],as(gr,'RangesList'))[seqlevels(gr)]
-  v=v[sapply(v,function(x){length(x)!=0})]
-  return(v)
+  gr$idsforgrviews <- 1:length(gr)#remember original order
+  gr = sort(gr) #sort
+  v=Views(rle[seqlevels(gr)],as(gr,'RangesList'))[seqlevels(gr)] #get views
+  v=v[sapply(v,function(x){length(x)!=0})] #get a vector, leaving out empty chromosomes
+  reorder=match(1:length(gr),gr$idsforgrviews) #get the original ordering
+  return(v[reorder])#and return our views in the correct order
 }
 
 
