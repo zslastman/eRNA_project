@@ -13,9 +13,10 @@ dir.create(outfolder,showWarnings=F)
 
 
 
-
+#see this page
+#http://stats.stackexchange.com/questions/57467/how-to-perform-dimension-reduction-after-doing-pca-in-r
 #simulate some data to make sure this is working properly
-#we'll have four columns, with the second two being dependant on the first tow
+#we'll have four columns, with the second two being dependant on the first two
 
 c1 = rbinom(n=1000,1,0.5)
 c2 = rbinom(n=1000,1,0.5)
@@ -46,6 +47,7 @@ pcs = split (pcob$loadings , col(pcob$scores)) #from matrix to list
 pdf(file=paste0(outfolder,'/',"pctest.pdf"))
 plot(cumsum(res$sdev^2/sum(res$sdev^2))) #cumulative explained variance
 dev.off()
+
 
 
 
